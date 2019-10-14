@@ -1,4 +1,4 @@
-project_name: cacophony-config
+project_name: go-config
 
 release:
   github:
