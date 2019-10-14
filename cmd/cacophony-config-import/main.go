@@ -42,9 +42,9 @@ func main() {
 }
 
 func runMain() error {
+	args := procArgs()
 	log.SetFlags(0)
 	log.Printf("running version: %s", version)
-	args := procArgs()
 	v := viper.New()
 	configFile := path.Join(args.Dir, "config.toml")
 	if _, err := os.Stat(configFile); err == nil && !args.Force {
