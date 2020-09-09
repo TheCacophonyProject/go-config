@@ -118,8 +118,8 @@ func TestReadingConfigInDir(t *testing.T) {
 	assert.NoError(t, conf.Unmarshal(SecretsKey, &secrets))
 	assert.Equal(t, secretsChanges, secrets)
 
-	thermalMotion := DefaultThermalMotion()
-	thermalMotionChanges := DefaultThermalMotion()
+	thermalMotion := DefaultThermalMotion("")
+	thermalMotionChanges := DefaultThermalMotion("")
 	thermalMotionChanges.TempThresh = 398
 	assert.NoError(t, conf.Unmarshal(ThermalMotionKey, &thermalMotion))
 	assert.Equal(t, thermalMotionChanges, thermalMotion)

@@ -16,6 +16,8 @@
 
 package config
 
+import "github.com/TheCacophonyProject/lepton3"
+
 const ThermalMotionKey = "thermal-motion"
 
 func init() {
@@ -28,18 +30,45 @@ func init() {
 
 type ThermalMotion struct {
 	DynamicThreshold bool   `mapstructure:"dynamic-threshold"`
+	TempThreshMin    uint16 `mapstructure:"temp-thresh-min"`
+	TempThreshMax    uint16 `mapstructure:"temp-thresh-max"`
 	TempThresh       uint16 `mapstructure:"temp-thresh"`
-	DeltaThresh      uint16 `mapstructure:"delta-thresh"`
-	CountThresh      int    `mapstructure:"count-thresh"`
-	FrameCompareGap  int    `mapstructure:"frame-compare-gap"`
-	UseOneDiffOnly   bool   `mapstructure:"use-one-diff-only"`
-	TriggerFrames    int    `mapstructure:"trigger-frames"`
-	WarmerOnly       bool   `mapstructure:"warmer-only"`
-	EdgePixels       int    `mapstructure:"edge-pixels"`
-	Verbose          bool   `mapstructure:"verbose"`
+
+	DeltaThresh     uint16 `mapstructure:"delta-thresh"`
+	CountThresh     int    `mapstructure:"count-thresh"`
+	FrameCompareGap int    `mapstructure:"frame-compare-gap"`
+	UseOneDiffOnly  bool   `mapstructure:"use-one-diff-only"`
+	TriggerFrames   int    `mapstructure:"trigger-frames"`
+	WarmerOnly      bool   `mapstructure:"warmer-only"`
+	EdgePixels      int    `mapstructure:"edge-pixels"`
+	Verbose         bool   `mapstructure:"verbose"`
 }
 
-func DefaultThermalMotion() ThermalMotion {
+func DefaultThermalMotion(cameraModel string) ThermalMotion {
+	switch cameraModel {
+	case lepton3.Model35:
+		return DefaultLepton35Motion()
+	default:
+		return DefaultLeptonMotion()
+	}
+}
+
+func DefaultLepton35Motion() ThermalMotion {
+	return ThermalMotion{
+		DynamicThreshold: true,
+		TempThresh:       28000, //280 Kelvin ~ 7 degrees
+		DeltaThresh:      250,   //2.5 degrees
+		CountThresh:      3,
+		FrameCompareGap:  45,
+		Verbose:          false,
+		TriggerFrames:    2,
+		UseOneDiffOnly:   true,
+		WarmerOnly:       true,
+		EdgePixels:       1,
+	}
+}
+
+func DefaultLeptonMotion() ThermalMotion {
 	return ThermalMotion{
 		DynamicThreshold: true,
 		TempThresh:       2900,
