@@ -33,15 +33,14 @@ type ThermalMotion struct {
 	TempThreshMin    uint16 `mapstructure:"temp-thresh-min"`
 	TempThreshMax    uint16 `mapstructure:"temp-thresh-max"`
 	TempThresh       uint16 `mapstructure:"temp-thresh"`
-
-	DeltaThresh     uint16 `mapstructure:"delta-thresh"`
-	CountThresh     int    `mapstructure:"count-thresh"`
-	FrameCompareGap int    `mapstructure:"frame-compare-gap"`
-	UseOneDiffOnly  bool   `mapstructure:"use-one-diff-only"`
-	TriggerFrames   int    `mapstructure:"trigger-frames"`
-	WarmerOnly      bool   `mapstructure:"warmer-only"`
-	EdgePixels      int    `mapstructure:"edge-pixels"`
-	Verbose         bool   `mapstructure:"verbose"`
+	DeltaThresh      uint16 `mapstructure:"delta-thresh"`
+	CountThresh      int    `mapstructure:"count-thresh"`
+	FrameCompareGap  int    `mapstructure:"frame-compare-gap"`
+	UseOneDiffOnly   bool   `mapstructure:"use-one-diff-only"`
+	TriggerFrames    int    `mapstructure:"trigger-frames"`
+	WarmerOnly       bool   `mapstructure:"warmer-only"`
+	EdgePixels       int    `mapstructure:"edge-pixels"`
+	Verbose          bool   `mapstructure:"verbose"`
 }
 
 func DefaultThermalMotion(cameraModel string) ThermalMotion {
@@ -72,6 +71,7 @@ func DefaultLeptonMotion() ThermalMotion {
 	return ThermalMotion{
 		DynamicThreshold: true,
 		TempThresh:       2900,
+		TempThreshMax:    2900,
 		DeltaThresh:      50,
 		CountThresh:      3,
 		FrameCompareGap:  45,
