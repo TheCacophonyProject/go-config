@@ -71,7 +71,6 @@ func DefaultLeptonMotion() ThermalMotion {
 	return ThermalMotion{
 		DynamicThreshold: true,
 		TempThresh:       2900,
-		TempThreshMax:    2900,
 		DeltaThresh:      50,
 		CountThresh:      3,
 		FrameCompareGap:  45,
