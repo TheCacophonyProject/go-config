@@ -38,7 +38,7 @@ func DefaultThermalRecorder() ThermalRecorder {
 	return ThermalRecorder{
 		MaxSecs:        600,
 		MinSecs:        10,
-		PreviewSecs:    3,
+		PreviewSecs:    5,
 		MinDiskSpaceMB: 200,
 		OutputDir:      "/var/spool/cptv",
 	}
