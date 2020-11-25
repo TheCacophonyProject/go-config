@@ -176,6 +176,15 @@ func (c *Config) Update() error {
 	return c.v.ReadInConfig()
 }
 
+func (c *Config) Reload() error {
+	configFile := c.v.ConfigFileUsed()
+	// Need a new viper instance to clear old settings
+	c.v = viper.New()
+	c.v.SetFs(fs)
+	c.v.SetConfigFile(configFile)
+	return c.v.ReadInConfig()
+}
+
 // TODO Only update if given time is after the "udpate" field of the section updating and set "update" field to given time if updating
 /*
 func (c *Config) StrictSet(key string, value interface{}, time time.Time) error {
