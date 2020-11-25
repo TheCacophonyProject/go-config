@@ -55,10 +55,10 @@ type Modem struct {
 func DefaultModemd() Modemd {
 	return Modemd{
 		TestInterval:      time.Minute * 5,
-		InitialOnDuration: time.Hour * 24,
+		InitialOnDuration: time.Hour,
 		FindModemTimeout:  time.Minute * 2,
 		ConnectionTimeout: time.Minute,
-		RequestOnDuration: time.Hour * 24,
+		RequestOnDuration: time.Minute * 5,
 		RetryInterval:     time.Minute * 20,
 		MinConnDuration:   time.Minute,
 		MaxOffDuration:    time.Hour * 24,
