@@ -27,20 +27,22 @@ func init() {
 }
 
 type ThermalRecorder struct {
-	OutputDir      string `mapstructure:"output-dir"`
-	MinDiskSpaceMB uint64 `mapstructure:"min-disk-space-mb"`
-	MinSecs        int    `mapstructure:"min-secs"`
-	MaxSecs        int    `mapstructure:"max-secs"`
-	PreviewSecs    int    `mapstructure:"preview-secs"`
+	OutputDir        string `mapstructure:"output-dir"`
+	MinDiskSpaceMB   uint64 `mapstructure:"min-disk-space-mb"`
+	MinSecs          int    `mapstructure:"min-secs"`
+	MaxSecs          int    `mapstructure:"max-secs"`
+	PreviewSecs      int    `mapstructure:"preview-secs"`
+	ConstantRecorder bool   `mapstructure:"constant-recorder"`
 }
 
 func DefaultThermalRecorder() ThermalRecorder {
 	return ThermalRecorder{
-		MaxSecs:        600,
-		MinSecs:        10,
-		PreviewSecs:    5,
-		MinDiskSpaceMB: 200,
-		OutputDir:      "/var/spool/cptv",
+		MaxSecs:          600,
+		MinSecs:          10,
+		PreviewSecs:      5,
+		MinDiskSpaceMB:   200,
+		OutputDir:        "/var/spool/cptv",
+		ConstantRecorder: false,
 	}
 }
 
