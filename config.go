@@ -36,10 +36,10 @@ import (
 )
 
 type Config struct {
-	v                *viper.Viper
-	fileLock         *flock.Flock
-	accessedSections map[string]struct{} //TODO record each section accessed for restarting service purpose
-	AutoWrite        bool
+	v         *viper.Viper
+	fileLock  *flock.Flock
+	AutoWrite bool
+	// accessedSections map[string]struct{} //TODO record each section accessed for restarting service purpose
 }
 
 const (
@@ -54,8 +54,6 @@ type section struct {
 	mapToStruct func(map[string]interface{}) (interface{}, error)
 	validate    func(interface{}) error
 }
-
-type decodeHookFunc func(reflect.Type, reflect.Type, interface{}) (interface{}, error)
 
 var allSections = map[string]section{} // each different section file has an init function that will add to this.
 var allSectionDecodeHookFuncs = []mapstructure.DecodeHookFunc{}
@@ -144,6 +142,9 @@ func (c *Config) SetFromMap(sectionKey string, newConfig map[string]interface{},
 
 	// Pull out parts from section for writing to config as to not write zero values
 	newMap, err := interfaceToMap(newStruct)
+	if err != nil {
+		return err
+	}
 	newMap = copyAndInsensitiviseMap(newMap)
 	for key := range newConfig {
 		val, ok := newMap[strings.ToLower(key)]
