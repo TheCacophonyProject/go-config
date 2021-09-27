@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/TheCacophonyProject/event-reporter/v3/eventclient"
 	"github.com/gofrs/flock"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/afero"
@@ -110,7 +111,7 @@ func (c *Config) Set(key string, value interface{}) error {
 	}
 	c.set(key, value)
 	if c.AutoWrite {
-		return c.v.WriteConfig()
+		return c.Write()
 	}
 	return nil
 }
@@ -220,7 +221,7 @@ func (c *Config) Unset(key string) error {
 	}
 	c.v.Set(path[0]+".updated", now())
 	if c.AutoWrite {
-		return c.v.WriteConfig()
+		return c.Write()
 	}
 	return nil
 }
@@ -260,12 +261,25 @@ func (c *Config) setStruct(key string, value interface{}) error {
 	}
 	c.set(key, m)
 	if c.AutoWrite {
-		return c.v.WriteConfig()
+		return c.Write()
 	}
 	return nil
 }
 
 func (c *Config) Write() error {
+	configMap := map[string]interface{}{}
+	for key := range allSections {
+		if key != SecretsKey {
+			configMap[key] = c.Get(key)
+		}
+	}
+	event := eventclient.Event{
+		Timestamp: time.Now(),
+		Type:      "config",
+		Details:   configMap,
+	}
+	eventclient.AddEvent(event)
+	eventclient.UploadEvents()
 	return c.v.WriteConfig()
 }
 
