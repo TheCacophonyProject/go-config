@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/TheCacophonyProject/event-reporter/v3/eventclient"
 	"github.com/gofrs/flock"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/afero"
@@ -36,10 +37,10 @@ import (
 )
 
 type Config struct {
-	v                *viper.Viper
-	fileLock         *flock.Flock
-	accessedSections map[string]struct{} //TODO record each section accessed for restarting service purpose
-	AutoWrite        bool
+	v         *viper.Viper
+	fileLock  *flock.Flock
+	AutoWrite bool
+	// accessedSections map[string]struct{} //TODO record each section accessed for restarting service purpose
 }
 
 const (
@@ -54,8 +55,6 @@ type section struct {
 	mapToStruct func(map[string]interface{}) (interface{}, error)
 	validate    func(interface{}) error
 }
-
-type decodeHookFunc func(reflect.Type, reflect.Type, interface{}) (interface{}, error)
 
 var allSections = map[string]section{} // each different section file has an init function that will add to this.
 var allSectionDecodeHookFuncs = []mapstructure.DecodeHookFunc{}
@@ -112,7 +111,7 @@ func (c *Config) Set(key string, value interface{}) error {
 	}
 	c.set(key, value)
 	if c.AutoWrite {
-		return c.v.WriteConfig()
+		return c.Write()
 	}
 	return nil
 }
@@ -144,6 +143,9 @@ func (c *Config) SetFromMap(sectionKey string, newConfig map[string]interface{},
 
 	// Pull out parts from section for writing to config as to not write zero values
 	newMap, err := interfaceToMap(newStruct)
+	if err != nil {
+		return err
+	}
 	newMap = copyAndInsensitiviseMap(newMap)
 	for key := range newConfig {
 		val, ok := newMap[strings.ToLower(key)]
@@ -219,7 +221,7 @@ func (c *Config) Unset(key string) error {
 	}
 	c.v.Set(path[0]+".updated", now())
 	if c.AutoWrite {
-		return c.v.WriteConfig()
+		return c.Write()
 	}
 	return nil
 }
@@ -259,12 +261,25 @@ func (c *Config) setStruct(key string, value interface{}) error {
 	}
 	c.set(key, m)
 	if c.AutoWrite {
-		return c.v.WriteConfig()
+		return c.Write()
 	}
 	return nil
 }
 
 func (c *Config) Write() error {
+	configMap := map[string]interface{}{}
+	for key := range allSections {
+		if key != SecretsKey {
+			configMap[key] = c.Get(key)
+		}
+	}
+	event := eventclient.Event{
+		Timestamp: time.Now(),
+		Type:      "config",
+		Details:   configMap,
+	}
+	eventclient.AddEvent(event)
+	eventclient.UploadEvents()
 	return c.v.WriteConfig()
 }
 

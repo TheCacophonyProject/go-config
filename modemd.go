@@ -63,8 +63,8 @@ func DefaultModemd() Modemd {
 		MinConnDuration:   time.Minute,
 		MaxOffDuration:    time.Hour * 24,
 		Modems: []Modem{
-			Modem{Name: "Huawei 4G modem", NetDev: "eth1", VendorProductID: "12d1:14db"},
-			Modem{Name: "Spark 3G modem", NetDev: "usb0", VendorProductID: "19d2:1405"},
+			{Name: "Huawei 4G modem", NetDev: "eth1", VendorProductID: "12d1:14db"},
+			{Name: "Spark 3G modem", NetDev: "usb0", VendorProductID: "19d2:1405"},
 		},
 	}
 }

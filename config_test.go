@@ -15,22 +15,6 @@ import (
 	"github.com/wawandco/fako"
 )
 
-const (
-	testTomlName        = "test.toml"
-	testTomlDefaultName = "test-default.toml"
-	testTomlFileDir     = "/"
-)
-
-func printConfigFile(dir string) {
-	filePath := path.Join(dir, ConfigFileName)
-	b, err := afero.ReadFile(fs, filePath)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	log.Println(string(b))
-}
-
 func TestDefaults(t *testing.T) {
 	defer newFs(t, "")()
 	conf, err := New(DefaultConfigDir)
@@ -326,15 +310,11 @@ func TestMapToModemd(t *testing.T) {
 	require.NoError(t, err)
 	modemdMap := map[string]interface{}{
 		"test-interval": "10m4s",
-		"modems": []map[string]interface{}{
-			map[string]interface{}{
-				"name": "modem name",
-			},
-		},
+		"modems":        []map[string]interface{}{{"name": "modem name"}},
 	}
 	modemdExpected := Modemd{
 		TestInterval: 10*time.Minute + 4*time.Second,
-		Modems:       []Modem{Modem{Name: "modem name"}},
+		Modems:       []Modem{{Name: "modem name"}},
 	}
 	checkWritingMap(t, ModemdKey, &Modemd{}, &modemdExpected, modemdMap, conf)
 }
