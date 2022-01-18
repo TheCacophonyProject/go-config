@@ -56,7 +56,7 @@ func DefaultLepton35Motion() ThermalMotion {
 	return ThermalMotion{
 		DynamicThreshold: true,
 		TempThresh:       28000, //280 Kelvin ~ 7 degrees
-		DeltaThresh:      200,   //2 degrees
+		DeltaThresh:      150,   //2 degrees
 		CountThresh:      3,
 		FrameCompareGap:  45,
 		Verbose:          false,
