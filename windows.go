@@ -16,6 +16,11 @@
 
 package config
 
+import (
+	"fmt"
+	"time"
+)
+
 func init() {
 	allSections[WindowsKey] = section{
 		key:         WindowsKey,
@@ -51,5 +56,23 @@ func windowsMapToStruct(m map[string]interface{}) (interface{}, error) {
 	if err := decodeStructFromMap(&s, m, nil); err != nil {
 		return nil, err
 	}
+
+	timeDurs := []string{s.StartRecording, s.StopRecording, s.PowerOff, s.PowerOn}
+	for _, timeDur := range timeDurs {
+		if timeDur != "" && !checkIfTimeOrDuration(timeDur) {
+			return nil, fmt.Errorf("could not parse '%s' as a time or duration", timeDur)
+		}
+	}
+
 	return s, nil
+}
+
+func checkIfTimeOrDuration(timeStr string) bool {
+	if _, err := time.Parse("15:04", timeStr); err == nil {
+		return true
+	}
+	if _, err := time.ParseDuration(timeStr); err == nil {
+		return true
+	}
+	return false
 }
