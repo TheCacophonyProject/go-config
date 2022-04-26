@@ -35,15 +35,16 @@ func init() {
 }
 
 type Modemd struct {
-	TestInterval      time.Duration `mapstructure:"test-interval"`
-	InitialOnDuration time.Duration `mapstructure:"initial-on-duration"`
-	FindModemTimeout  time.Duration `mapstructure:"find-modem-timeout"`
-	ConnectionTimeout time.Duration `mapstructure:"connection-timeout"`
-	RequestOnDuration time.Duration `mapstructure:"request-on-duration"`
-	RetryInterval     time.Duration `mapstructure:"retry-interval"`
-	MinConnDuration   time.Duration `mapstructure:"min-connection-duration"`
-	MaxOffDuration    time.Duration `mapstructure:"max-off-duration"`
-	Modems            []Modem       `mapstructure:"modems"`
+	TestInterval           time.Duration `mapstructure:"test-interval"`
+	InitialOnDuration      time.Duration `mapstructure:"initial-on-duration"`
+	FindModemTimeout       time.Duration `mapstructure:"find-modem-timeout"`
+	ConnectionTimeout      time.Duration `mapstructure:"connection-timeout"`
+	RequestOnDuration      time.Duration `mapstructure:"request-on-duration"`
+	RetryInterval          time.Duration `mapstructure:"retry-interval"`
+	RetryFindModemInterval time.Duration `mapstructure:"retry-find-modem-interval"`
+	MinConnDuration        time.Duration `mapstructure:"min-connection-duration"`
+	MaxOffDuration         time.Duration `mapstructure:"max-off-duration"`
+	Modems                 []Modem       `mapstructure:"modems"`
 }
 
 type Modem struct {
@@ -54,14 +55,15 @@ type Modem struct {
 
 func DefaultModemd() Modemd {
 	return Modemd{
-		TestInterval:      time.Minute * 5,
-		InitialOnDuration: time.Hour,
-		FindModemTimeout:  time.Minute * 2,
-		ConnectionTimeout: time.Minute,
-		RequestOnDuration: time.Minute * 5,
-		RetryInterval:     time.Minute * 20,
-		MinConnDuration:   time.Minute,
-		MaxOffDuration:    time.Hour * 24,
+		TestInterval:           time.Minute * 5,
+		InitialOnDuration:      time.Minute * 20,
+		FindModemTimeout:       time.Second * 30,
+		ConnectionTimeout:      time.Minute,
+		RequestOnDuration:      time.Minute * 2,
+		RetryInterval:          time.Minute * 20,
+		RetryFindModemInterval: time.Hour * 3,
+		MinConnDuration:        time.Minute,
+		MaxOffDuration:         time.Hour * 24,
 		Modems: []Modem{
 			{Name: "Huawei 4G modem", NetDev: "eth1", VendorProductID: "12d1:14db"},
 			{Name: "Spark 3G modem", NetDev: "usb0", VendorProductID: "19d2:1405"},
