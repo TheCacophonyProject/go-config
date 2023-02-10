@@ -67,6 +67,7 @@ func DefaultModemd() Modemd {
 		Modems: []Modem{
 			{Name: "Huawei 4G modem", NetDev: "eth1", VendorProductID: "12d1:14db"},
 			{Name: "Spark 3G modem", NetDev: "usb0", VendorProductID: "19d2:1405"},
+			{Name: "Qualcomm", NetDev: "usb0", VendorProductID: "1e0e:9011"},
 		},
 	}
 }
