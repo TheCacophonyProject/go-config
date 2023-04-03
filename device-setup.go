@@ -29,7 +29,7 @@ func init() {
 
 type DeviceSetup struct {
 	IR bool `mapstructure:"ir"`
-	TrapSetup string `mapstructure:"trap-setup"`
+	TrapSize string `mapstructure:"trap-size"`
 }
 
 func deviceSetupMapToStruct(m map[string]interface{}) (interface{}, error) {
