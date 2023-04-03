@@ -29,6 +29,8 @@ func init() {
 
 type DeviceSetup struct {
 	IR bool `mapstructure:"ir"`
+
+	// S or L ( for small trap or large trap)
 	TrapSize string `mapstructure:"trap-size"`
 }
 
