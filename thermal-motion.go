@@ -16,8 +16,6 @@
 
 package config
 
-import "github.com/TheCacophonyProject/lepton3"
-
 const ThermalMotionKey = "thermal-motion"
 
 func init() {
@@ -45,7 +43,7 @@ type ThermalMotion struct {
 
 func DefaultThermalMotion(cameraModel string) ThermalMotion {
 	switch cameraModel {
-	case lepton3.Model35:
+	case "lepton3.5":
 		return DefaultLepton35Motion()
 	default:
 		return DefaultLeptonMotion()
