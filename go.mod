@@ -1,6 +1,6 @@
 module github.com/TheCacophonyProject/go-config
 
-go 1.17
+go 1.20
 
 require (
 	github.com/TheCacophonyProject/event-reporter/v3 v3.3.0

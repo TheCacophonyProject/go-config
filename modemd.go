@@ -57,8 +57,8 @@ func DefaultModemd() Modemd {
 	return Modemd{
 		TestInterval:           time.Minute * 5,
 		InitialOnDuration:      time.Minute * 20,
-		FindModemTimeout:       time.Second * 30,
-		ConnectionTimeout:      time.Minute,
+		FindModemTimeout:       time.Minute * 3,
+		ConnectionTimeout:      time.Minute * 3,
 		RequestOnDuration:      time.Minute * 2,
 		RetryInterval:          time.Minute * 20,
 		RetryFindModemInterval: time.Hour * 3,
