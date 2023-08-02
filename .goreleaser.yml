@@ -12,6 +12,7 @@ builds:
   - linux
   goarch:
   - arm
+  - arm64
   goarm:
   - "7"
   main: ./cmd/cacophony-config-import
@@ -22,6 +23,7 @@ builds:
   - linux
   goarch:
   - arm
+  - arm64
   goarm:
   - "7"
   main: ./cmd/cacophony-config
