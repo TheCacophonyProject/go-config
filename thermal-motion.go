@@ -39,6 +39,8 @@ type ThermalMotion struct {
 	WarmerOnly       bool   `mapstructure:"warmer-only"`
 	EdgePixels       int    `mapstructure:"edge-pixels"`
 	Verbose          bool   `mapstructure:"verbose"`
+	RunClassifier    bool   `mapstructure:"run-classifier"`
+	TrackingEvents   bool   `mapstructure:"tracking-events"`
 }
 
 func DefaultThermalMotion(cameraModel string) ThermalMotion {
