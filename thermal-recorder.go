@@ -33,6 +33,7 @@ type ThermalRecorder struct {
 	MaxSecs          int    `mapstructure:"max-secs"`
 	PreviewSecs      int    `mapstructure:"preview-secs"`
 	ConstantRecorder bool   `mapstructure:"constant-recorder"`
+	UseLowPowerMode  bool   `mapstructure:"use-low-power-mode"`
 }
 
 func DefaultThermalRecorder() ThermalRecorder {
@@ -43,6 +44,7 @@ func DefaultThermalRecorder() ThermalRecorder {
 		MinDiskSpaceMB:   200,
 		OutputDir:        "/var/spool/cptv",
 		ConstantRecorder: false,
+		UseLowPowerMode:  false,
 	}
 }
 
