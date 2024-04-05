@@ -18,7 +18,6 @@ package config
 
 const setupKey = "device-setup"
 
-
 func init() {
 	allSections[setupKey] = section{
 		key:         setupKey,
