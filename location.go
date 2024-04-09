@@ -79,7 +79,7 @@ func mapToLocation(m map[string]interface{}) (interface{}, error) {
 	return l, nil
 }
 
-//TODO
+// TODO
 func validateLocation(l interface{}) error {
 	return nil
 }

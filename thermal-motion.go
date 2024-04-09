@@ -41,6 +41,7 @@ type ThermalMotion struct {
 	Verbose          bool   `mapstructure:"verbose"`
 	RunClassifier    bool   `mapstructure:"run-classifier"`
 	TrackingEvents   bool   `mapstructure:"tracking-events"`
+	DoTracking       bool   `mapstructure:"do-tracking"`
 }
 
 func DefaultThermalMotion(cameraModel string) ThermalMotion {
