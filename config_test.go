@@ -108,11 +108,17 @@ func TestReadingConfigInDir(t *testing.T) {
 	assert.NoError(t, conf.Unmarshal(ThermalMotionKey, &thermalMotion))
 	assert.Equal(t, thermalMotionChanges, thermalMotion)
 
-	audio := DefaultAudio()
-	audioChanges := DefaultAudio()
+	audio := DefaultAudioBait()
+	audioChanges := DefaultAudioBait()
 	audioChanges.Card = 1
-	assert.NoError(t, conf.Unmarshal(AudioKey, &audio))
+	assert.NoError(t, conf.Unmarshal(AudioBaitKey, &audio))
 	assert.Equal(t, audioChanges, audio)
+
+	audioRec := DefaultAudioRecording()
+	audioRecChanges := DefaultAudioRecording()
+	audioRecChanges.Enabled = true
+	assert.NoError(t, conf.Unmarshal(AudioRecordingKey, &audioRec))
+	assert.Equal(t, audioRecChanges, audioRec)
 }
 
 func TestSettingInvalidKeys(t *testing.T) {
@@ -278,12 +284,12 @@ func TestMapToAudio(t *testing.T) {
 		"card":           "4",
 		"volume-control": "audio volume control",
 	}
-	audioExpected := Audio{
+	audioExpected := AudioBait{
 		Dir:           "/audio/directory",
 		Card:          4,
 		VolumeControl: "audio volume control",
 	}
-	checkWritingMap(t, AudioKey, &Audio{}, &audioExpected, audioMap, conf)
+	checkWritingMap(t, AudioBaitKey, &AudioBait{}, &audioExpected, audioMap, conf)
 }
 
 func TestMapToBattery(t *testing.T) {
@@ -323,20 +329,20 @@ func TestSetField(t *testing.T) {
 	defer newFs(t, "")()
 	conf, err := New(DefaultConfigDir)
 	require.NoError(t, err)
-	audio := Audio{
+	audio := AudioBait{
 		Dir:           "/audio/directory",
 		Card:          4,
 		VolumeControl: "audio volume control",
 	}
-	require.NoError(t, conf.Set(AudioKey, audio))
+	require.NoError(t, conf.Set(AudioBaitKey, audio))
 
-	require.NoError(t, conf.SetField(AudioKey, "card", "5", false))
-	require.Error(t, conf.SetField(AudioKey, "not-a-key", "5", false))
+	require.NoError(t, conf.SetField(AudioBaitKey, "card", "5", false))
+	require.Error(t, conf.SetField(AudioBaitKey, "not-a-key", "5", false))
 
-	var audio2 Audio
-	require.NoError(t, conf.Unmarshal(AudioKey, &audio2))
+	var audio2 AudioBait
+	require.NoError(t, conf.Unmarshal(AudioBaitKey, &audio2))
 
-	audioExpected := Audio{
+	audioExpected := AudioBait{
 		Dir:           "/audio/directory",
 		Card:          5,
 		VolumeControl: "audio volume control",

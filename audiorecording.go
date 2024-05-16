@@ -27,12 +27,12 @@ func init() {
 }
 
 type AudioRecording struct {
-	IsAudioDevice bool `mapstructure:is-audio-device`
+	Enabled bool `mapstructure:enabled`
 }
 
 func DefaultAudioRecording() AudioRecording {
 	return AudioRecording{
-		IsAudioDevice: false,
+		Enabled: false,
 	}
 }
 
