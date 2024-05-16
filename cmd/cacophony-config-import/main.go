@@ -113,7 +113,8 @@ var configProcessingFuncs = []func(string) (interface{}, error){
 	processLocation,
 	processDevice,
 	processManagementd,
-	processAudio,
+	processAudioBait,
+	processAudioRecording,
 }
 
 func processAttiny(configDir string) (interface{}, error) {
@@ -271,13 +272,22 @@ type rawManagementdConfig struct {
 	Port int `yaml:"port" mapstructure:"ports.managementd"`
 }
 
-func processAudio(configDir string) (interface{}, error) {
-	s := &rawAudioConfig{}
+func processAudioBait(configDir string) (interface{}, error) {
+	s := &rawAudioBaitConfig{}
 	return s, yamlToStruct(path.Join(configDir, "../audiobait.yaml"), s)
 }
 
-type rawAudioConfig struct {
+type rawAudioBaitConfig struct {
 	AudioDir      string `yaml:"audio-directory" mapstructure:"audio.directory"`
 	Card          int    `yaml:"card" mapstructure:"audio.card"`
 	VolumeControl string `yaml:"volume-control" mapstructure:"audio.volume-control"`
+}
+
+func processAudioRecording(configDir string) (interface{}, error) {
+	s := &rawAudioRecordingConfig{}
+	return s, yamlToStruct(path.Join(configDir, "../audio-recording.yaml"), s)
+}
+
+type rawAudioRecordingConfig struct {
+	IsAudioDevice bool `yaml:"is-audio-device" mapstructure:"audio.is-audio-device"`
 }

@@ -16,32 +16,28 @@
 
 package config
 
-const AudioKey = "audio"
+const AudioRecordingKey = "audio-recording"
 
 func init() {
-	allSections[AudioKey] = section{
-		key:         AudioKey,
-		mapToStruct: audioMapToStruct,
+	allSections[AudioRecordingKey] = section{
+		key:         AudioRecordingKey,
+		mapToStruct: audioRecordingMapToStruct,
 		validate:    noValidateFunc,
 	}
 }
 
-type Audio struct {
-	Dir           string `mapstructure:"directory"`
-	Card          int    `mapstructure:"card"`
-	VolumeControl string `mapstructure:"volume-control"`
+type AudioRecording struct {
+	IsAudioDevice bool `mapstructure:is-audio-device`
 }
 
-func DefaultAudio() Audio {
-	return Audio{
-		Dir:           "/var/lib/audiobait",
-		Card:          0,
-		VolumeControl: "PCM",
+func DefaultAudioRecording() AudioRecording {
+	return AudioRecording{
+		IsAudioDevice: false,
 	}
 }
 
-func audioMapToStruct(m map[string]interface{}) (interface{}, error) {
-	var s Audio
+func audioRecordingMapToStruct(m map[string]interface{}) (interface{}, error) {
+	var s AudioRecording
 	if err := decodeStructFromMap(&s, m, nil); err != nil {
 		return nil, err
 	}

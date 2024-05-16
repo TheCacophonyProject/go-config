@@ -39,3 +39,6 @@
 
 [gpio]
   thermal-camera-power = "a gpio pin"
+
+[audio]
+  is-audio-device = true
