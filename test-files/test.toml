@@ -1,4 +1,4 @@
-[audio]
+[audio-bait]
  card = 1
 
 [device]
@@ -39,3 +39,6 @@
 
 [gpio]
   thermal-camera-power = "a gpio pin"
+
+[audio-recording]
+  enabled = true
