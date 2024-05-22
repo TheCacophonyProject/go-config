@@ -16,32 +16,28 @@
 
 package config
 
-const DeviceSetupKey = "device-setup"
+const SaltKey = "salt"
 
 func init() {
-	allSections[DeviceSetupKey] = section{
-		key:         DeviceSetupKey,
-		mapToStruct: deviceSetupMapToStruct,
+	allSections[SaltKey] = section{
+		key:         SaltKey,
+		mapToStruct: saltMapToStruct,
 		validate:    noValidateFunc,
 	}
 }
 
-type DeviceSetup struct {
-	IR bool `mapstructure:"ir"`
-
-	// S or L ( for small trap or large trap)
-	TrapSize string `mapstructure:"trap-size"`
+type Salt struct {
+	AutoUpdate bool `mapstructure:"auto-update"`
 }
 
-func DefaultDeviceSetup() DeviceSetup {
-	return DeviceSetup{
-		IR:       false,
-		TrapSize: "s",
+func DefaultSalt() Salt {
+	return Salt{
+		AutoUpdate: true,
 	}
 }
 
-func deviceSetupMapToStruct(m map[string]interface{}) (interface{}, error) {
-	var s DeviceSetup
+func saltMapToStruct(m map[string]interface{}) (interface{}, error) {
+	var s Salt
 	if err := decodeStructFromMap(&s, m, nil); err != nil {
 		return nil, err
 	}
