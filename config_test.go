@@ -119,6 +119,17 @@ func TestReadingConfigInDir(t *testing.T) {
 	audioRecChanges.Enabled = true
 	assert.NoError(t, conf.Unmarshal(AudioRecordingKey, &audioRec))
 	assert.Equal(t, audioRecChanges, audioRec)
+
+	setup := DefaultDeviceSetup()
+	setupChanges := DefaultDeviceSetup()
+	assert.NoError(t, conf.Unmarshal(DeviceSetupKey, &setup))
+	assert.Equal(t, setup, setupChanges)
+
+	salt := DefaultSalt()
+	saltChanges := DefaultSalt()
+	assert.NoError(t, conf.Unmarshal(SaltKey, &salt))
+	assert.Equal(t, salt, saltChanges)
+
 }
 
 func TestSettingInvalidKeys(t *testing.T) {
