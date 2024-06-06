@@ -1,6 +1,0 @@
-go 1.20
-
-use (
-	. // Path to the main module (current directory)
-	../go-api // Path to the local go-config module
-)
