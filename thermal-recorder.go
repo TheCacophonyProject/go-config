@@ -16,6 +16,8 @@
 
 package config
 
+import "time"
+
 const ThermalRecorderKey = "thermal-recorder"
 
 func init() {
@@ -27,13 +29,14 @@ func init() {
 }
 
 type ThermalRecorder struct {
-	OutputDir        string `mapstructure:"output-dir"`
-	MinDiskSpaceMB   uint64 `mapstructure:"min-disk-space-mb"`
-	MinSecs          int    `mapstructure:"min-secs"`
-	MaxSecs          int    `mapstructure:"max-secs"`
-	PreviewSecs      int    `mapstructure:"preview-secs"`
-	ConstantRecorder bool   `mapstructure:"constant-recorder"`
-	UseLowPowerMode  bool   `mapstructure:"use-low-power-mode"`
+	OutputDir        string    `mapstructure:"output-dir"`
+	MinDiskSpaceMB   uint64    `mapstructure:"min-disk-space-mb"`
+	MinSecs          int       `mapstructure:"min-secs"`
+	MaxSecs          int       `mapstructure:"max-secs"`
+	PreviewSecs      int       `mapstructure:"preview-secs"`
+	ConstantRecorder bool      `mapstructure:"constant-recorder"`
+	UseLowPowerMode  bool      `mapstructure:"use-low-power-mode"`
+	Updated          time.Time `mapstructure:"updated"`
 }
 
 func DefaultThermalRecorder() ThermalRecorder {

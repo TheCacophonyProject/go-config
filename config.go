@@ -56,17 +56,23 @@ type section struct {
 	validate    func(interface{}) error
 }
 
-var allSections = map[string]section{} // each different section file has an init function that will add to this.
-var allSectionDecodeHookFuncs = []mapstructure.DecodeHookFunc{}
+var (
+	allSections               = map[string]section{} // each different section file has an init function that will add to this.
+	allSectionDecodeHookFuncs = []mapstructure.DecodeHookFunc{}
+)
 
 // Helpers for testing purposes
-var fs = afero.NewOsFs()
-var now = time.Now
-var lockFilePath = func(configFile string) string {
-	return configFile + ".lock"
-}
-var lockTimeout = 10 * time.Second
-var mapStrInterfaceType = reflect.TypeOf(map[string]interface{}{})
+var (
+	fs           = afero.NewOsFs()
+	now          = time.Now
+	lockFilePath = func(configFile string) string {
+		return configFile + ".lock"
+	}
+)
+var (
+	lockTimeout         = 10 * time.Second
+	mapStrInterfaceType = reflect.TypeOf(map[string]interface{}{})
+)
 
 // New created a new config and loads files from the given directory
 func New(dir string) (*Config, error) {
