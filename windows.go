@@ -32,10 +32,11 @@ func init() {
 const WindowsKey = "windows"
 
 type Windows struct {
-	StartRecording string `mapstructure:"start-recording"`
-	StopRecording  string `mapstructure:"stop-recording"`
-	PowerOn        string `mapstructure:"power-on"`
-	PowerOff       string `mapstructure:"power-off"`
+	StartRecording string    `mapstructure:"start-recording"`
+	StopRecording  string    `mapstructure:"stop-recording"`
+	PowerOn        string    `mapstructure:"power-on"`
+	PowerOff       string    `mapstructure:"power-off"`
+	Updated        time.Time `mapstructure:"updated"`
 }
 
 func DefaultWindows() Windows {

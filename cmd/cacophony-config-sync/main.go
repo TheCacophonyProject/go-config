@@ -45,6 +45,7 @@ type Section struct {
 // Sections is a slice of Section
 type Sections []Section
 
+// IMPORTANT:
 var ConfigSections = Sections{
 	{
 		Name:   "thermalRecording",
@@ -64,7 +65,39 @@ var ConfigSections = Sections{
 			},
 		},
 	},
-	// Add more sections as needed
+	{
+		Name:   "windows",
+		Key:    config.WindowsKey,
+		Config: &config.Windows{},
+		Mappings: []Mapping{
+			{
+				APIKey:    "startRecording",
+				ConfigKey: "StartRecording",
+				MapKey:    "start-recording",
+			},
+			{
+				APIKey:    "stopRecording",
+				ConfigKey: "StopRecording",
+				MapKey:    "stop-recording",
+			},
+			{
+				APIKey:    "powerOn",
+				ConfigKey: "PowerOn",
+				MapKey:    "power-on",
+			},
+			{
+				APIKey:    "powerOff",
+				ConfigKey: "PowerOff",
+				MapKey:    "power-off",
+			},
+			{
+				APIKey:    "updated",
+				ConfigKey: "Updated",
+				MapKey:    "updated",
+				Converter: stringToTimeConverter,
+			},
+		},
+	},
 }
 
 const (
@@ -218,19 +251,17 @@ func (s *SyncService) updateConfig(settings map[string]interface{}) error {
 func (s *SyncService) uploadSettingsToAPI(settings map[string]interface{}) (map[string]interface{}, error) {
 	settingsMap := make(map[string]interface{})
 
-	// Create a map specifically for thermalRecording settings
-	thermalRecording := make(map[string]interface{})
-
 	for _, section := range ConfigSections {
+		sectionMap := make(map[string]interface{})
 		for _, mapping := range section.Mappings {
 			if value, ok := settings[section.Name].(map[string]interface{})[mapping.APIKey]; ok {
-				thermalRecording[mapping.APIKey] = value
+				sectionMap[mapping.APIKey] = value
 			}
 		}
+		if len(sectionMap) > 0 {
+			settingsMap[section.Name] = sectionMap
+		}
 	}
-
-	// Ensure thermalRecording is correctly nested
-	settingsMap["thermalRecording"] = thermalRecording
 
 	updatedSettings, err := s.apiClient.UpdateDeviceSettings(settingsMap)
 	if err != nil {
