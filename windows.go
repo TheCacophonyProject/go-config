@@ -45,6 +45,7 @@ func DefaultWindows() Windows {
 		StopRecording:  "+30m",
 		PowerOn:        "-30m",
 		PowerOff:       "+30m",
+		Updated:        time.Now(),
 	}
 }
 
@@ -57,6 +58,7 @@ func windowsMapToStruct(m map[string]interface{}) (interface{}, error) {
 	if err := decodeStructFromMap(&s, m, nil); err != nil {
 		return nil, err
 	}
+
 
 	timeDurs := []string{s.StartRecording, s.StopRecording, s.PowerOff, s.PowerOn}
 	for _, timeDur := range timeDurs {

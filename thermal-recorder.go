@@ -48,6 +48,7 @@ func DefaultThermalRecorder() ThermalRecorder {
 		OutputDir:        "/var/spool/cptv",
 		ConstantRecorder: false,
 		UseLowPowerMode:  false,
+		Updated:          time.Now(),
 	}
 }
 

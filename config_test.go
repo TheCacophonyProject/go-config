@@ -37,7 +37,7 @@ func TestReadingConfigInDir(t *testing.T) {
 	assert.Equal(t, deviceChanges, device)
 
 	windows := DefaultWindows()
-	windowChanges := DefaultWindows()
+	windowChanges := windows
 	windowChanges.PowerOff = "+1s"
 	assert.NoError(t, conf.Unmarshal(WindowsKey, &windows))
 	assert.Equal(t, windowChanges, windows)
@@ -79,7 +79,7 @@ func TestReadingConfigInDir(t *testing.T) {
 	assert.Equal(t, leptonChanges, lepton)
 
 	thermalRecorder := DefaultThermalRecorder()
-	thermalRecorderChanges := DefaultThermalRecorder()
+	thermalRecorderChanges := thermalRecorder
 	thermalRecorderChanges.MaxSecs = 321
 	assert.NoError(t, conf.Unmarshal(ThermalRecorderKey, &thermalRecorder))
 	assert.Equal(t, thermalRecorderChanges, thermalRecorder)
@@ -129,7 +129,6 @@ func TestReadingConfigInDir(t *testing.T) {
 	saltChanges := DefaultSalt()
 	assert.NoError(t, conf.Unmarshal(SaltKey, &salt))
 	assert.Equal(t, salt, saltChanges)
-
 }
 
 func TestSettingInvalidKeys(t *testing.T) {
@@ -174,7 +173,7 @@ func TestWriting(t *testing.T) {
 	require.NoError(t, conf.Unmarshal(TestHostsKey, &h2))
 
 	require.Equal(t, d, d2)
-	require.Equal(t, w, w2)
+	equalWindows(t, w, w2)
 	equalLocation(t, l, l2)
 	require.Equal(t, h, h2)
 }
@@ -200,7 +199,7 @@ func TestClearSection(t *testing.T) {
 	require.NoError(t, conf.Unmarshal(WindowsKey, &w2))
 	l.Latitude = 0
 	equalLocation(t, l, l2)
-	require.Equal(t, w, w2)
+	equalWindows(t, w, w2)
 }
 
 func TestClear(t *testing.T) {
@@ -221,7 +220,7 @@ func TestClear(t *testing.T) {
 	w2 := Windows{}
 	require.NoError(t, conf.Unmarshal(WindowsKey, &w2))
 	equalLocation(t, Location{}, l2)
-	require.Equal(t, w, w2)
+	equalWindows(t, w, w2)
 }
 
 func TestFileLock(t *testing.T) {
@@ -367,7 +366,8 @@ func checkWritingMap(
 	key string,
 	s, expected interface{},
 	m map[string]interface{},
-	conf *Config) {
+	conf *Config,
+) {
 	require.NoError(t, conf.SetFromMap(key, m, false))
 	require.NoError(t, conf.Unmarshal(key, s))
 	require.Equal(t, expected, s)
@@ -394,9 +394,24 @@ func randomDevice() (d Device) {
 	return
 }
 
-func randomWindows() (w Windows) {
-	fako.Fuzz(&w)
-	return
+func randomWindows() Windows {
+	// Repliates how the time is formatted in the config file
+	updated, err := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+	if err != nil {
+		panic(err)
+	}
+	return Windows{
+		StartRecording: randomDuration(),
+		StopRecording:  randomDuration(),
+		PowerOn:        randomDuration(),
+		PowerOff:       randomDuration(),
+		Updated:        updated,
+	}
+}
+
+func randomDuration() string {
+	durations := []string{"-30m", "+30m", "12:00", "13:00"}
+	return durations[rand.Intn(len(durations))]
 }
 
 func randomLocation() Location {
@@ -413,6 +428,14 @@ func equalLocation(t *testing.T, l1, l2 Location) {
 	require.Equal(t, l1.Latitude, l2.Latitude)
 	require.Equal(t, l1.Longitude, l2.Longitude)
 	require.Equal(t, l1.Timestamp.Unix(), l2.Timestamp.Unix())
+}
+
+func equalWindows(t *testing.T, w1, w2 Windows) {
+	require.Equal(t, w1.StartRecording, w2.StartRecording)
+	require.Equal(t, w1.StopRecording, w2.StopRecording)
+	require.Equal(t, w1.PowerOn, w2.PowerOn)
+	require.Equal(t, w1.PowerOff, w2.PowerOff)
+	require.Equal(t, w1.Updated.Unix(), w2.Updated.Unix())
 }
 
 func randomTestHosts() TestHosts {
