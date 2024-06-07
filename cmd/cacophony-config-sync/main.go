@@ -102,7 +102,7 @@ var ConfigSections = Sections{
 
 const (
 	configDir    = config.DefaultConfigDir
-	syncInterval = time.Second * 10 // adjust as needed
+	syncInterval = time.Minute * 1 // adjust as needed
 )
 
 type CacophonyAPIInterface interface {
@@ -271,9 +271,19 @@ func (s *SyncService) uploadSettingsToAPI(settings map[string]interface{}) (map[
 }
 
 func main() {
+	for {
+		err := run()
+		if err != nil {
+			log.Printf("Service encountered an error: %v", err)
+		}
+		time.Sleep(5 * time.Second) // Adjust the delay as needed
+	}
+}
+
+func run() error {
 	syncService, err := NewSyncService()
 	if err != nil {
-		log.Fatalf("Failed to initialize sync service: %v", err)
+		return fmt.Errorf("failed to initialize sync service: %v", err)
 	}
 
 	stopCh := make(chan struct{})
@@ -282,4 +292,6 @@ func main() {
 	// Simulate a stop after a certain duration for demonstration
 	time.Sleep(syncInterval + time.Second)
 	close(stopCh)
+
+	return nil
 }
