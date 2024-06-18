@@ -42,6 +42,7 @@ type ThermalMotion struct {
 	RunClassifier    bool   `mapstructure:"run-classifier"`
 	TrackingEvents   bool   `mapstructure:"tracking-events"`
 	DoTracking       bool   `mapstructure:"do-tracking"`
+	BluetoothBeacons bool   `mapstructure:"bluetooth-beacons"`
 }
 
 func DefaultThermalMotion(cameraModel string) ThermalMotion {
