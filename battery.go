@@ -33,6 +33,8 @@ type Battery struct {
 	FullBattery           uint16              `mapstructure:"full-battery-reading"`
 	LiIon                 map[float32]float32 `mapstructure:"li-ion"`
 	Lime                  map[float32]float32 `mapstructure:"Lime"`
+	BatteryType           string              `mapstructure:"battery-type"`
+	BatteryVoltage        map[float32]float32 `mapstructure:"battery-voltage"`
 }
 
 // https://imgur.com/IoUKfQs
