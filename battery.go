@@ -34,11 +34,12 @@ type Battery struct {
 	LiIon                 map[float32]float32 `mapstructure:"li-ion"`
 	Lime                  map[float32]float32 `mapstructure:"Lime"`
 	BatteryType           string              `mapstructure:"battery-type"`
-	BatteryVoltage        map[float32]float32 `mapstructure:"battery-voltage"`
+	BatteryVoltagePercent map[float32]float32 `mapstructure:"battery-voltage-percent"`
 }
 
 // if no battery type is specific LiIon or Lime will be used based of the voltage reading
-// if a battery type other than li-ion or lime is specified it will use the batteryvoltage map
+// if a battery type other than li-ion or lime is specified it will use the battery-voltage-percent map
+// this should be  map in assending order of {voltage : percentage, voltage_2 : percentage_2....} of battery
 
 // https://imgur.com/IoUKfQs
 func DefaultBattery() Battery {
