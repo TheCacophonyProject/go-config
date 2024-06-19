@@ -37,7 +37,8 @@ type Battery struct {
 	BatteryVoltage        map[float32]float32 `mapstructure:"battery-voltage"`
 }
 
-//if no battery type is specific LiIon or Lime will be used based of the voltage reading
+// if no battery type is specific LiIon or Lime will be used based of the voltage reading
+// if a battery type other than li-ion or lime is specified it will use the batteryvoltage map
 
 // https://imgur.com/IoUKfQs
 func DefaultBattery() Battery {
