@@ -36,9 +36,6 @@ func init() {
 
 type Battery struct {
 	EnableVoltageReadings    bool                `mapstructure:"enable-voltage-readings"`
-	NoBattery                uint16              `mapstructure:"no-battery-reading"`
-	LowBattery               uint16              `mapstructure:"low-battery-reading"`
-	FullBattery              uint16              `mapstructure:"full-battery-reading"`
 	BatteryType              string              `mapstructure:"battery-type"`
 	BatteryVoltageThresholds map[float32]float32 `mapstructure:"battery-voltage-thresholds"`
 }
