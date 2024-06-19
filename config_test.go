@@ -62,7 +62,6 @@ func TestReadingConfigInDir(t *testing.T) {
 
 	var battery Battery
 	batteryChanges := Battery{}
-	batteryChanges.NoBattery = 10
 	assert.NoError(t, conf.Unmarshal(BatteryKey, &battery))
 	assert.Equal(t, batteryChanges, battery)
 
