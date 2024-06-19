@@ -21,6 +21,7 @@ import "strings"
 const (
 	BatteryKey         = "battery"
 	limeBatteryThreshV = 10
+	noBatteryThreshV   = 0.2
 )
 
 var LiIon = map[float32]float32{3.4: 0, 3.46: 5, 3.51: 10, 3.56: 15, 3.58: 20, 3.61: 25, 3.62: 30, 3.64: 35, 3.67: 40, 3.71: 45, 3.76: 50, 3.81: 55, 3.86: 60, 3.9: 65, 3.93: 70, 3.97: 75, 4.0: 80, 4.04: 85, 4.07: 90, 4.11: 95, 4.17: 100}
@@ -59,8 +60,9 @@ func (batteryConfig *Battery) GetBatteryVoltageThresholds(batVolt float32) (stri
 		return batType, Lime
 	} else if batType != "" {
 		return batType, batteryConfig.BatteryVoltageThresholds
-	}
-	if batVolt <= limeBatteryThreshV {
+	} else if batVolt <= noBatteryThreshV {
+		return "mains", map[float32]float32{0: 100, 100: 100}
+	} else if batVolt <= limeBatteryThreshV {
 		return "li-ion", LiIon
 	}
 	return "lime", Lime
