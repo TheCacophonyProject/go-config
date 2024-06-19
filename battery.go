@@ -43,10 +43,6 @@ type Battery struct {
 	BatteryVoltageThresholds map[float32]float32 `mapstructure:"battery-voltage-thresholds"`
 }
 
-// if no battery type is specific LiIon or Lime will be used based of the voltage reading
-// if a battery type other than li-ion or lime is specified it will use the battery-voltage-thresholds map
-// this should be  map in assending order of {voltage : percentage, voltage_2 : percentage_2....} of battery
-
 // https://imgur.com/IoUKfQs
 func DefaultBattery() Battery {
 	return Battery{
@@ -54,6 +50,10 @@ func DefaultBattery() Battery {
 	}
 }
 
+// GetBatteryVoltageThresholds gets battery type and voltage thresholds
+// if no battery type is specific LiIon or Lime will be used based of batVolt reading
+// if a battery type other than li-ion or lime is specified it will use the battery-voltage-thresholds map
+// this should be  map in assending order of {voltage : percentage, voltage_2 : percentage_2....} of battery
 func (batteryConfig *Battery) GetBatteryVoltageThresholds(batVolt float32) (string, map[float32]float32) {
 	batType := strings.ToLower(strings.Trim(batteryConfig.BatteryType, ""))
 	if batType == "li-ion" {
@@ -67,7 +67,6 @@ func (batteryConfig *Battery) GetBatteryVoltageThresholds(batVolt float32) (stri
 		return "li-ion", LiIon
 	}
 	return "lime", Lime
-
 }
 
 func batteryMapToStruct(m map[string]interface{}) (interface{}, error) {
