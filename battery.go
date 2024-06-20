@@ -24,8 +24,11 @@ const (
 	noBatteryThreshV   = 0.2
 )
 
-var LiIon = map[float32]float32{3.4: 0, 3.46: 5, 3.51: 10, 3.56: 15, 3.58: 20, 3.61: 25, 3.62: 30, 3.64: 35, 3.67: 40, 3.71: 45, 3.76: 50, 3.81: 55, 3.86: 60, 3.9: 65, 3.93: 70, 3.97: 75, 4.0: 80, 4.04: 85, 4.07: 90, 4.11: 95, 4.17: 100}
-var Lime = map[float32]float32{30: 0, 30.1: 1, 30.2: 2, 30.4: 3, 30.5: 4, 30.6: 5, 30.7: 6, 30.8: 7, 31.0: 8, 31.1: 9, 31.2: 10, 31.3: 11, 31.4: 12, 31.6: 13, 31.7: 14, 31.8: 15, 31.9: 16, 32.0: 17, 32.2: 18, 32.3: 19, 32.4: 20, 32.5: 21, 32.6: 22, 32.8: 23, 32.9: 24, 33.0: 25, 33.1: 26, 33.2: 27, 33.4: 28, 33.5: 29, 33.6: 30, 33.7: 31, 33.8: 32, 34.0: 33, 34.1: 34, 34.2: 35, 34.3: 36, 34.4: 37, 34.6: 38, 34.7: 39, 34.8: 40, 34.9: 41, 35.0: 42, 35.2: 43, 35.3: 44, 35.4: 45, 35.5: 46, 35.6: 47, 35.8: 48, 35.9: 49, 36.0: 50, 36.1: 51, 36.2: 52, 36.4: 53, 36.5: 54, 36.6: 55, 36.7: 56, 36.8: 57, 37.0: 58, 37.1: 59, 37.2: 60, 37.3: 61, 37.4: 62, 37.6: 63, 37.7: 64, 37.8: 65, 37.9: 66, 38.0: 67, 38.2: 68, 38.3: 69, 38.4: 70, 38.5: 71, 38.6: 72, 38.8: 73, 38.9: 74, 39.0: 75, 39.1: 76, 39.2: 77, 39.4: 78, 39.5: 79, 39.6: 80, 39.7: 81, 39.8: 82, 40.0: 83, 40.1: 84, 40.2: 85, 40.3: 86, 40.4: 87, 40.6: 88, 40.7: 89, 40.8: 90, 40.9: 91, 41.0: 92, 41.2: 93, 41.3: 94, 41.4: 95, 41.5: 96, 41.6: 97, 41.8: 98, 41.9: 99, 42.0: 100}
+var LiIonVoltage = []float32{3.4, 3.46, 3.51, 3.56, 3.58, 3.61, 3.62, 3.64, 3.67, 3.71, 3.76, 3.81, 3.86, 3.9, 3.93, 3.97, 4.0, 4.04, 4.07, 4.11, 4.17}
+var LiIonPercent = []float32{0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100}
+
+var LimeVoltage = []float32{30.0, 30.1, 30.2, 30.4, 30.5, 30.6, 30.7, 30.8, 31.0, 31.1, 31.2, 31.3, 31.4, 31.6, 31.7, 31.8, 31.9, 32.0, 32.2, 32.3, 32.4, 32.5, 32.6, 32.8, 32.9, 33.0, 33.1, 33.2, 33.4, 33.5, 33.6, 33.7, 33.8, 34.0, 34.1, 34.2, 34.3, 34.4, 34.6, 34.7, 34.8, 34.9, 35.0, 35.2, 35.3, 35.4, 35.5, 35.6, 35.8, 35.9, 36.0, 36.1, 36.2, 36.4, 36.5, 36.6, 36.7, 36.8, 37.0, 37.1, 37.2, 37.3, 37.4, 37.6, 37.7, 37.8, 37.9, 38.0, 38.2, 38.3, 38.4, 38.5, 38.6, 38.8, 38.9, 39.0, 39.1, 39.2, 39.4, 39.5, 39.6, 39.7, 39.8, 40.0, 40.1, 40.2, 40.3, 40.4, 40.6, 40.7, 40.8, 40.9, 41.0, 41.2, 41.3, 41.4, 41.5, 41.6, 41.8, 41.9, 42.0}
+var LimePercent = []float32{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100}
 
 func init() {
 	allSections[BatteryKey] = section{
@@ -36,9 +39,10 @@ func init() {
 }
 
 type Battery struct {
-	EnableVoltageReadings    bool                `mapstructure:"enable-voltage-readings"`
-	BatteryType              string              `mapstructure:"battery-type"`
-	BatteryVoltageThresholds map[float32]float32 `mapstructure:"battery-voltage-thresholds"`
+	EnableVoltageReadings bool      `mapstructure:"enable-voltage-readings"`
+	BatteryType           string    `mapstructure:"battery-type"`
+	BatteryVoltage        []float32 `mapstructure:"battery-voltage"`
+	BatteryPercent        []float32 `mapstructure:"battery-percent"`
 }
 
 // https://imgur.com/IoUKfQs
@@ -50,22 +54,22 @@ func DefaultBattery() Battery {
 
 // GetBatteryVoltageThresholds gets battery type and voltage thresholds
 // if no battery type is specific LiIon or Lime will be used based of batVolt reading
-// if a battery type other than li-ion or lime is specified it will use the battery-voltage-thresholds map
-// this should be  map in assending order of {voltage : percentage, voltage_2 : percentage_2....} of battery
-func (batteryConfig *Battery) GetBatteryVoltageThresholds(batVolt float32) (string, map[float32]float32) {
+// if a battery type other than li-ion or lime is specified it will use the battery-voltage,battery-percent config
+// these arrays should be in ascending order of battery percentage ( 0 , 1, .. 100).
+func (batteryConfig *Battery) GetBatteryVoltageThresholds(batVolt float32) (string, []float32, []float32) {
 	batType := strings.ToLower(strings.Trim(batteryConfig.BatteryType, ""))
 	if batType == "li-ion" {
-		return batType, LiIon
+		return batType, LiIonVoltage, LiIonPercent
 	} else if batType == "lime" {
-		return batType, Lime
+		return batType, LimeVoltage, LimePercent
 	} else if batType != "" {
-		return batType, batteryConfig.BatteryVoltageThresholds
+		return batType, batteryConfig.BatteryVoltage, batteryConfig.BatteryPercent
 	} else if batVolt <= noBatteryThreshV {
-		return "mains", map[float32]float32{0: 100, 100: 100}
+		return "mains", []float32{0, 0.2}, []float32{100, 100}
 	} else if batVolt <= limeBatteryThreshV {
-		return "li-ion", LiIon
+		return "li-ion", LiIonVoltage, LiIonPercent
 	}
-	return "lime", Lime
+	return "lime", LimeVoltage, LimePercent
 }
 
 func batteryMapToStruct(m map[string]interface{}) (interface{}, error) {
