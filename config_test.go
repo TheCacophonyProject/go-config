@@ -115,7 +115,7 @@ func TestReadingConfigInDir(t *testing.T) {
 
 	audioRec := DefaultAudioRecording()
 	audioRecChanges := DefaultAudioRecording()
-	audioRecChanges.Enabled = true
+	audioRecChanges.AudioMode = "AudioOnly"
 	assert.NoError(t, conf.Unmarshal(AudioRecordingKey, &audioRec))
 	assert.Equal(t, audioRecChanges, audioRec)
 
