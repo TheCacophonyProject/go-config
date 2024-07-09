@@ -65,7 +65,7 @@ func (batteryConfig *Battery) GetBatteryVoltageThresholds(batVolt float32) (stri
 	} else if batType != "" {
 		return batType, batteryConfig.BatteryVoltage, batteryConfig.BatteryPercent
 	} else if batVolt <= noBatteryThreshV {
-		return "mains", []float32{0, 0.2}, []float32{100, 100}
+		return "unknown", []float32{0, 0.2}, []float32{100, 100}
 	} else if batVolt <= limeBatteryThreshV {
 		return "li-ion", LiIonVoltage, LiIonPercent
 	}
