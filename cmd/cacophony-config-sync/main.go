@@ -45,7 +45,7 @@ type Section struct {
 // Sections is a slice of Section
 type Sections []Section
 
-// IMPORTANT:
+// IMPORTANT: apikey refers to the field from the api, config key is the map structure name, and map key is the mapped key to the config
 var ConfigSections = Sections{
 	{
 		Name:   "thermalRecording",
@@ -98,6 +98,23 @@ var ConfigSections = Sections{
 			},
 		},
 	},
+	{
+		Name:   "location",
+		Key:    config.LocationKey,
+		Config: &config.Location{},
+		Mappings: []Mapping{
+			{
+				APIKey:    "lat",
+				ConfigKey: "Latitude",
+				MapKey:    "latitude",
+			},
+			{
+				APIKey:    "lng",
+				ConfigKey: "Longitude",
+				MapKey:    "longitude",
+			},
+		},
+	},
 }
 
 const (
@@ -118,7 +135,7 @@ type CacophonyConfigInterface interface {
 
 type SyncService struct {
 	apiClient CacophonyAPIInterface
-	config    CacophonyConfigInterface
+	config    *config.Config
 }
 
 func NewSyncService() (*SyncService, error) {
@@ -187,6 +204,9 @@ func (s *SyncService) fetchSettingsFromAPI() (map[string]interface{}, error) {
 }
 
 func (s *SyncService) readCurrentSettings() (map[string]interface{}, error) {
+	if err := s.config.Reload(); err != nil {
+		return nil, err
+	}
 	settings := make(map[string]interface{})
 
 	for _, section := range ConfigSections {
