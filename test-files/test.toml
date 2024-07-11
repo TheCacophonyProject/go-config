@@ -41,4 +41,4 @@
   thermal-camera-power = "a gpio pin"
 
 [audio-recording]
-  enabled = true
+  audio-mode = "AudioOnly"
