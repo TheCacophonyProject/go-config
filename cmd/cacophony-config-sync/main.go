@@ -10,6 +10,11 @@ import (
 	config "github.com/TheCacophonyProject/go-config"
 )
 
+const (
+	configDir    = config.DefaultConfigDir
+	syncInterval = time.Minute * 5
+)
+
 func stringToTimeConverter(value interface{}) (interface{}, error) {
 	strVal, ok := value.(string)
 	if !ok {
@@ -117,11 +122,6 @@ var ConfigSections = Sections{
 	},
 }
 
-const (
-	configDir    = config.DefaultConfigDir
-	syncInterval = time.Minute * 1 // adjust as needed
-)
-
 type CacophonyAPIInterface interface {
 	GetDeviceSettings() (map[string]interface{}, error)
 	UpdateDeviceSettings(settings map[string]interface{}) (map[string]interface{}, error)
@@ -155,28 +155,14 @@ func NewSyncService() (*SyncService, error) {
 	}, nil
 }
 
-func (s *SyncService) Run(stopCh <-chan struct{}, interval time.Duration) {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			if err := s.syncSettings(); err != nil {
-				log.Printf("Error syncing settings: %v", err)
-			}
-		case <-stopCh:
-			return
-		}
-	}
-}
-
 func (s *SyncService) syncSettings() error {
 	deviceSettings, err := s.readCurrentSettings()
 	if err != nil {
 		return fmt.Errorf("failed to read current settings: %v", err)
 	}
+	log.Printf("Device Settings: %+v", deviceSettings)
 
+	// Send config to server to get a merged config
 	serverSettings, err := s.uploadSettingsToAPI(deviceSettings)
 	if err != nil {
 		return fmt.Errorf("failed to fetch settings from API: %v", err)
@@ -185,15 +171,83 @@ func (s *SyncService) syncSettings() error {
 	// Map server settings to expected config structure
 	mappedSettings := s.mapServerSettingsToConfig(serverSettings)
 
-	if err := s.updateConfig(mappedSettings); err != nil {
+	// Filter out unchanged settings
+	filteredSettings := s.filterUnchangedSettings(mappedSettings, deviceSettings)
+
+	if len(filteredSettings) == 0 {
+		log.Println("No settings to update after filtering")
+		return nil
+	}
+
+	if err := s.updateConfig(filteredSettings); err != nil {
 		return fmt.Errorf("failed to update config: %v", err)
 	}
 
 	return nil
 }
 
+func (s *SyncService) filterUnchangedSettings(mappedSettings, deviceSettings map[string]interface{}) map[string]interface{} {
+	filteredSettings := make(map[string]interface{})
+
+	log.Println("Starting to filter unchanged settings")
+
+	for _, section := range ConfigSections {
+		log.Printf("Checking section: %s", section.Key)
+
+		if mappedSectionSettings, ok := mappedSettings[section.Key]; ok {
+			mappedSection := mappedSectionSettings.(map[string]interface{})
+			deviceSection, deviceOk := deviceSettings[section.Name].(map[string]interface{})
+
+			if !deviceOk {
+				log.Printf("Warning: Device settings for section %s not found or not a map", section.Name)
+				filteredSettings[section.Key] = mappedSection
+				continue
+			}
+
+			// Find the "updated" field for this section
+			var updatedField string
+			for _, mapping := range section.Mappings {
+				if mapping.APIKey == "updated" {
+					updatedField = mapping.MapKey
+					break
+				}
+			}
+
+			if updatedField != "" {
+				mappedUpdateTime, mappedOk := mappedSection[updatedField].(time.Time)
+				deviceUpdateTime, deviceOk := deviceSection["updated"].(time.Time)
+
+				if mappedOk && deviceOk {
+					log.Printf("Section %s - Mapped update time: %v, Device update time: %v",
+						section.Key, mappedUpdateTime, deviceUpdateTime)
+
+					// If the mapped update time is after the device update time, include this section
+					if mappedUpdateTime.After(deviceUpdateTime) {
+						log.Printf("Including section %s: mapped time is newer", section.Key)
+						filteredSettings[section.Key] = mappedSection
+					} else {
+						log.Printf("Filtering out section %s: mapped time is not newer", section.Key)
+					}
+				} else {
+					log.Printf("Warning: Couldn't compare update times for section %s. Including it to be safe.", section.Key)
+					filteredSettings[section.Key] = mappedSection
+				}
+			} else {
+				log.Printf("No 'updated' field found for section %s. Including it.", section.Key)
+				filteredSettings[section.Key] = mappedSection
+			}
+		} else {
+			log.Printf("Section %s not found in mapped settings", section.Key)
+		}
+	}
+
+	log.Printf("Filtered settings: %+v", filteredSettings)
+	return filteredSettings
+}
+
 func (s *SyncService) fetchSettingsFromAPI() (map[string]interface{}, error) {
 	serverSettings, err := s.apiClient.GetDeviceSettings()
+	log.Printf("Received server settings: %+v", serverSettings)
 	if err != nil {
 		if err.Error() == "no settings found" { // Adjust this condition based on the actual error returned
 			return make(map[string]interface{}), nil
@@ -236,16 +290,52 @@ func (s *SyncService) readCurrentSettings() (map[string]interface{}, error) {
 func (s *SyncService) mapServerSettingsToConfig(serverSettings map[string]interface{}) map[string]interface{} {
 	mappedSettings := make(map[string]interface{})
 
-	for _, section := range ConfigSections {
-		sectionSettings := make(map[string]interface{})
-		for _, mapping := range section.Mappings {
-			if value, ok := serverSettings[section.Name].(map[string]interface{})[mapping.APIKey]; ok {
-				sectionSettings[mapping.MapKey] = value
-			}
-		}
-		mappedSettings[section.Key] = sectionSettings
+	// Check if serverSettings is nil
+	if serverSettings == nil {
+		log.Println("Server settings are nil, returning empty mapped settings")
+		return mappedSettings
 	}
 
+	for _, section := range ConfigSections {
+		sectionSettings := make(map[string]interface{})
+
+		// Check if the section exists in serverSettings
+		if sectionData, ok := serverSettings[section.Name]; ok {
+			// Check if sectionData is a map[string]interface{}
+			if sectionMap, ok := sectionData.(map[string]interface{}); ok {
+				for _, mapping := range section.Mappings {
+					if value, ok := sectionMap[mapping.APIKey]; ok {
+						// If this is the "updated" field, convert it to time.Time
+						if mapping.APIKey == "updated" {
+							if timeStr, ok := value.(string); ok {
+								parsedTime, err := time.Parse(time.RFC3339, timeStr)
+								if err != nil {
+									log.Printf("Error parsing time for %s in section %s: %v", mapping.APIKey, section.Name, err)
+									// If parsing fails, we'll keep the original string value
+									sectionSettings[mapping.MapKey] = value
+								} else {
+									sectionSettings[mapping.MapKey] = parsedTime
+									log.Printf("Converted time for %s in section %s: %v", mapping.APIKey, section.Name, parsedTime)
+								}
+							} else {
+								log.Printf("Expected string for %s in section %s, got %T", mapping.APIKey, section.Name, value)
+								sectionSettings[mapping.MapKey] = value
+							}
+						} else {
+							sectionSettings[mapping.MapKey] = value
+						}
+					}
+				}
+			}
+		}
+
+		// Only add non-empty sections
+		if len(sectionSettings) > 0 {
+			mappedSettings[section.Key] = sectionSettings
+		}
+	}
+
+	log.Printf("Final mapped settings: %+v", mappedSettings)
 	return mappedSettings
 }
 
@@ -273,9 +363,15 @@ func (s *SyncService) uploadSettingsToAPI(settings map[string]interface{}) (map[
 
 	for _, section := range ConfigSections {
 		sectionMap := make(map[string]interface{})
-		for _, mapping := range section.Mappings {
-			if value, ok := settings[section.Name].(map[string]interface{})[mapping.APIKey]; ok {
-				sectionMap[mapping.APIKey] = value
+		if date, ok := settings[section.Name].(map[string]interface{})["updated"]; ok && !isEmptyValue(date) {
+			for _, mapping := range section.Mappings {
+				if value, ok := settings[section.Name].(map[string]interface{})[mapping.APIKey]; ok {
+					// Check if the value is non-empty before adding it to the map
+					if !isEmptyValue(value) {
+						log.Printf("Adding value to settings: %v", value)
+						sectionMap[mapping.APIKey] = value
+					}
+				}
 			}
 		}
 		if len(sectionMap) > 0 {
@@ -287,16 +383,47 @@ func (s *SyncService) uploadSettingsToAPI(settings map[string]interface{}) (map[
 	if err != nil {
 		return nil, fmt.Errorf("failed to update settings on API: %v", err)
 	}
+	log.Printf("Update Settings: %+v", updatedSettings)
 	return updatedSettings, nil
 }
 
+// isEmptyValue checks if a value is considered empty
+func isEmptyValue(v interface{}) bool {
+	switch value := v.(type) {
+	case nil:
+		return true
+	case string:
+		return value == ""
+	case int, int8, int16, int32, int64:
+		return value == 0
+	case uint, uint8, uint16, uint32, uint64:
+		return value == 0
+	case float32, float64:
+		return value == float32(0)
+	case bool:
+		return false
+	case time.Time:
+		return value.IsZero()
+	case []interface{}:
+		return len(value) == 0
+	case map[string]interface{}:
+		return len(value) == 0
+	default:
+		return reflect.ValueOf(v).IsZero()
+	}
+}
+
 func main() {
+	log.Println("Starting Cacophony Config Sync Service")
+
 	for {
-		err := run()
-		if err != nil {
+		if err := run(); err != nil {
 			log.Printf("Service encountered an error: %v", err)
 		}
-		time.Sleep(5 * time.Second) // Adjust the delay as needed
+
+		// Always wait for the sync interval before the next attempt
+		log.Printf("Waiting %v before next sync attempt", syncInterval)
+		time.Sleep(syncInterval)
 	}
 }
 
@@ -306,12 +433,10 @@ func run() error {
 		return fmt.Errorf("failed to initialize sync service: %v", err)
 	}
 
-	stopCh := make(chan struct{})
-	go syncService.Run(stopCh, syncInterval)
-
-	// Simulate a stop after a certain duration for demonstration
-	time.Sleep(syncInterval + time.Second)
-	close(stopCh)
+	// Perform a single sync operation
+	if err := syncService.syncSettings(); err != nil {
+		return fmt.Errorf("sync operation failed: %v", err)
+	}
 
 	return nil
 }
