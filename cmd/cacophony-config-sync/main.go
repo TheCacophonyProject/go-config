@@ -1,3 +1,20 @@
+/*
+cacophony-config-sync - sync device settings with Cacophony Project API.
+Copyright (C) 2018, The Cacophony Project
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 package main
 
 import (
@@ -8,6 +25,7 @@ import (
 
 	api "github.com/TheCacophonyProject/go-api"
 	config "github.com/TheCacophonyProject/go-config"
+	"github.com/TheCacophonyProject/modemd/modemlistener"
 )
 
 const (
@@ -415,28 +433,42 @@ func isEmptyValue(v interface{}) bool {
 
 func main() {
 	log.Println("Starting Cacophony Config Sync Service")
-
-	for {
-		if err := run(); err != nil {
-			log.Printf("Service encountered an error: %v", err)
-		}
-
-		// Always wait for the sync interval before the next attempt
-		log.Printf("Waiting %v before next sync attempt", syncInterval)
-		time.Sleep(syncInterval)
+	if err := runMain(); err != nil {
+		log.Printf("Service encountered an error: %v", err)
 	}
 }
 
-func run() error {
+func runMain() error {
+	modemConnectSignal, err := modemlistener.GetModemConnectedSignalListener()
+	if err != nil {
+		log.Println("Failed to get modem connected signal listener")
+	}
 	syncService, err := NewSyncService()
 	if err != nil {
 		return fmt.Errorf("failed to initialize sync service: %v", err)
 	}
+	for {
 
-	// Perform a single sync operation
-	if err := syncService.syncSettings(); err != nil {
-		return fmt.Errorf("sync operation failed: %v", err)
+		// Perform a single sync operation
+		if err := syncService.syncSettings(); err != nil {
+			return fmt.Errorf("sync operation failed: %v", err)
+		}
+
+		emptyChannel(modemConnectSignal)
+		select {
+		case <-modemConnectSignal:
+			log.Println("Modem connected.")
+		case <-time.After(syncInterval):
+		}
 	}
+}
 
-	return nil
+func emptyChannel(ch chan time.Time) {
+	for {
+		select {
+		case <-ch:
+		default:
+			return
+		}
+	}
 }
