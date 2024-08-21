@@ -4,46 +4,62 @@ release:
   github:
     owner: TheCacophonyProject
     name: go-config
-  name_template: '{{.Tag}}'
+  name_template: "{{.Tag}}"
 
 builds:
-- id: cacophony-config-import
-  goos:
-  - linux
-  goarch:
-  - arm
-  - arm64
-  goarm:
-  - "7"
-  main: ./cmd/cacophony-config-import
-  ldflags: -s -w -X main.version={{.Version}}
-  binary: cacophony-config-import
-- id: cacophony-config
-  goos:
-  - linux
-  goarch:
-  - arm
-  - arm64
-  goarm:
-  - "7"
-  main: ./cmd/cacophony-config
-  ldflags: -s -w -X main.version={{.Version}}
-  binary: cacophony-config
+  - id: cacophony-config-import
+    goos:
+      - linux
+    goarch:
+      - arm
+      - arm64
+    goarm:
+      - "7"
+    main: ./cmd/cacophony-config-import
+    ldflags: -s -w -X main.version={{.Version}}
+    binary: cacophony-config-import
+
+  - id: cacophony-config
+    goos:
+      - linux
+    goarch:
+      - arm
+      - arm64
+    goarm:
+      - "7"
+    main: ./cmd/cacophony-config
+    ldflags: -s -w -X main.version={{.Version}}
+    binary: cacophony-config
+
+  - id: cacophony-config-sync
+    goos:
+      - linux
+    goarch:
+      - arm
+      - arm64
+    goarm:
+      - "7"
+    main: ./cmd/cacophony-config-sync
+    ldflags: -s -w -X main.version={{.Version}}
+    binary: cacophony-config-sync
 
 nfpms:
-- vendor: The Cacophony Project
-  homepage: http://cacophony.org.nz/
-  maintainer: Cacophony Developers <coredev@cacophony.org.nz>
-  description: Helper for cacophony config files
-  license: GPL v3.0
-  file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Arch }}"
-  formats:
-    - deb
-  bindir: /usr/bin
-  scripts:
-    postinstall: "_release/postinstall.sh"
+  - vendor: The Cacophony Project
+    homepage: http://cacophony.org.nz/
+    maintainer: Cacophony Developers <coredev@cacophony.org.nz>
+    description: Helper for cacophony config files
+    license: GPL v3.0
+    file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Arch }}"
+    formats:
+      - deb
+    bindir: /usr/bin
+    contents:
+      - src: _release/cacophony-config-sync.service
+        dst: /etc/systemd/system/cacophony-config-sync.service
+    scripts:
+      postinstall: "_release/postinstall.sh"
 
 checksum:
-  name_template: '{{ .ProjectName }}_{{ .Version }}_checksums.txt'
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
 
 dist: dist

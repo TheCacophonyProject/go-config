@@ -1,0 +1,12 @@
+[Unit]
+Description=Cacophony Config Sync Service
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/cacophony-config-sync
+Restart=always
+User=pi
+Group=pi
+
+[Install]
+WantedBy=multi-user.target
