@@ -373,6 +373,7 @@ func checkWritingMap(
 }
 
 func newFs(t *testing.T, configFile string) func() {
+	writeEvents = false
 	fs := afero.NewMemMapFs()
 	SetFs(fs)
 	fsConfigFile := path.Join(DefaultConfigDir, ConfigFileName)

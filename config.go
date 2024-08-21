@@ -59,6 +59,7 @@ type section struct {
 var (
 	allSections               = map[string]section{} // each different section file has an init function that will add to this.
 	allSectionDecodeHookFuncs = []mapstructure.DecodeHookFunc{}
+	writeEvents               = true // This can be set to false for testing.
 )
 
 // Helpers for testing purposes
@@ -279,13 +280,18 @@ func (c *Config) Write() error {
 			configMap[key] = c.Get(key)
 		}
 	}
-	event := eventclient.Event{
-		Timestamp: time.Now(),
-		Type:      "config",
-		Details:   configMap,
+
+	if writeEvents {
+		event := eventclient.Event{
+			Timestamp: time.Now(),
+			Type:      "config",
+			Details:   configMap,
+		}
+		eventclient.AddEvent(event)
+		eventclient.UploadEvents()
+
 	}
-	eventclient.AddEvent(event)
-	eventclient.UploadEvents()
+
 	return c.v.WriteConfig()
 }
 

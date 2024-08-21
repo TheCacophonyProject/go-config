@@ -23,8 +23,9 @@ require (
 	gopkg.in/yaml.v1 v1.0.0-20140924161607-9f9df34309c0
 )
 
+require github.com/TheCacophonyProject/modemd v1.10.0
+
 require (
-	github.com/TheCacophonyProject/modemd v1.10.0 // indirect
 	github.com/boltdb/bolt v1.3.1 // indirect
 	github.com/corpix/uarand v0.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
