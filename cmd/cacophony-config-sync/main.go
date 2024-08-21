@@ -30,7 +30,7 @@ import (
 
 const (
 	configDir    = config.DefaultConfigDir
-	syncInterval = time.Minute * 5
+	syncInterval = time.Hour * 24
 )
 
 func stringToTimeConverter(value interface{}) (interface{}, error) {
