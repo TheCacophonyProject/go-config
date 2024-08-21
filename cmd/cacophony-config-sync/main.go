@@ -267,9 +267,6 @@ func (s *SyncService) fetchSettingsFromAPI() (map[string]interface{}, error) {
 	serverSettings, err := s.apiClient.GetDeviceSettings()
 	log.Printf("Received server settings: %+v", serverSettings)
 	if err != nil {
-		if err.Error() == "no settings found" { // Adjust this condition based on the actual error returned
-			return make(map[string]interface{}), nil
-		}
 		return nil, fmt.Errorf("failed to get device settings from API: %v", err)
 	}
 	return serverSettings, nil
