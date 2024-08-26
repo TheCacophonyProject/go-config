@@ -1,12 +1,15 @@
 [Unit]
 Description=Cacophony Config Sync Service
 After=network.target
+StartLimitInterval=200
+StartLimitBurst=10
 
 [Service]
 ExecStart=/usr/bin/cacophony-config-sync
 Restart=always
 User=pi
 Group=pi
+RestartSec=30
 
 [Install]
 WantedBy=multi-user.target
