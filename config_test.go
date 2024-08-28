@@ -2,7 +2,6 @@ package config
 
 import (
 	"context"
-	"log"
 	"math/rand"
 	"path"
 	"testing"
@@ -181,7 +180,6 @@ func TestClearSection(t *testing.T) {
 	defer newFs(t, "")()
 	conf, err := New(DefaultConfigDir)
 	require.NoError(t, err)
-	log.Println()
 	l := randomLocation()
 	w := randomWindows()
 	require.NoError(t, conf.Set(LocationKey, &l))

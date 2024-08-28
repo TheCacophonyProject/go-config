@@ -2,24 +2,28 @@ package main
 
 import (
 	"io/ioutil"
-	"log"
+
 	"os"
 	"path"
 	"reflect"
 	"time"
 
 	config "github.com/TheCacophonyProject/go-config"
+	"github.com/TheCacophonyProject/go-utils/logging"
 	"github.com/alexflint/go-arg"
 	"github.com/mitchellh/mapstructure"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v1"
 )
 
 var version = "<not set>"
+var log *logrus.Logger
 
 type Args struct {
 	Dir   string `args:"--dir" help:"config directory"`
 	Force bool   `args:"--force" help:"will override existing config file"`
+	logging.LogArgs
 }
 
 func (Args) Version() string {
@@ -42,7 +46,9 @@ func main() {
 
 func runMain() error {
 	args := procArgs()
-	log.SetFlags(0)
+
+	log = logging.NewLogger(args.LogLevel)
+
 	log.Printf("running version: %s", version)
 	v := viper.New()
 	configFile := path.Join(args.Dir, "config.toml")
