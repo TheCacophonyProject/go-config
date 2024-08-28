@@ -27,7 +27,6 @@ import (
 	"github.com/TheCacophonyProject/go-utils/logging"
 	"github.com/TheCacophonyProject/modemd/modemlistener"
 	"github.com/alexflint/go-arg"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -430,7 +429,7 @@ func isEmptyValue(v interface{}) bool {
 	}
 }
 
-var log *logrus.Logger
+var log = logging.NewLogger("info")
 var version = "<not set>"
 
 type Args struct {
