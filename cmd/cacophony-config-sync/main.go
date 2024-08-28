@@ -19,13 +19,14 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"reflect"
 	"time"
 
 	api "github.com/TheCacophonyProject/go-api"
 	config "github.com/TheCacophonyProject/go-config"
+	"github.com/TheCacophonyProject/go-utils/logging"
 	"github.com/TheCacophonyProject/modemd/modemlistener"
+	"github.com/alexflint/go-arg"
 )
 
 const (
@@ -428,6 +429,23 @@ func isEmptyValue(v interface{}) bool {
 	}
 }
 
+var log = logging.NewLogger("info")
+var version = "<not set>"
+
+type Args struct {
+	logging.LogArgs
+}
+
+func (Args) Version() string {
+	return version
+}
+
+func procArgs() Args {
+	var args Args
+	arg.MustParse(&args)
+	return args
+}
+
 func main() {
 	log.Println("Starting Cacophony Config Sync Service")
 	if err := runMain(); err != nil {
@@ -436,6 +454,12 @@ func main() {
 }
 
 func runMain() error {
+	args := procArgs()
+
+	log = logging.NewLogger(args.LogLevel)
+
+	log.Info("Running version: ", version)
+
 	modemConnectSignal, err := modemlistener.GetModemConnectedSignalListener()
 	if err != nil {
 		log.Println("Failed to get modem connected signal listener")

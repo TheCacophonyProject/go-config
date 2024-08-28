@@ -1,6 +1,6 @@
 module github.com/TheCacophonyProject/go-config
 
-go 1.20
+go 1.22.3
 
 require (
 	github.com/TheCacophonyProject/event-reporter/v3 v3.8.0
@@ -18,12 +18,16 @@ require (
 	github.com/spf13/viper v1.9.0
 	github.com/stretchr/testify v1.9.0
 	github.com/wawandco/fako v0.0.0-20180828010250-c36a0bc97398
-	golang.org/x/sys v0.0.0-20211117180635-dee7805ff2e1 // indirect
+	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/yaml.v1 v1.0.0-20140924161607-9f9df34309c0
 )
 
-require github.com/TheCacophonyProject/modemd v1.10.0
+require (
+	github.com/TheCacophonyProject/go-utils v0.1.1
+	github.com/TheCacophonyProject/modemd v1.10.0
+	github.com/sirupsen/logrus v1.9.3
+)
 
 require (
 	github.com/boltdb/bolt v1.3.1 // indirect

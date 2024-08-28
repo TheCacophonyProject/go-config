@@ -3,15 +3,17 @@ package main
 import (
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 
 	config "github.com/TheCacophonyProject/go-config"
+	"github.com/TheCacophonyProject/go-utils/logging"
 	"github.com/alexflint/go-arg"
 	"github.com/pelletier/go-toml"
+	"github.com/sirupsen/logrus"
 )
 
 var version = "<not set>"
+var log *logrus.Logger
 
 type Args struct {
 	ConfigDir string   `arg:"-c,--config" help:"path to configuration directory"`
@@ -20,6 +22,7 @@ type Args struct {
 	Delete    bool     `arg:"-d,--delete" help:"delete from config file"`
 	Force     bool     `arg:"-f,--force" help:"force writing to config if invalid keys are found"`
 	Input     []string `arg:"positional"`
+	logging.LogArgs
 }
 
 func (Args) Version() string {
@@ -41,7 +44,9 @@ func main() {
 
 func runMain() error {
 	args := procArgs()
-	log.SetFlags(0)
+
+	log = logging.NewLogger(args.LogLevel)
+
 	log.Printf("running version: %s", version)
 
 	if args.Write {
