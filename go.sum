@@ -53,8 +53,8 @@ github.com/TheCacophonyProject/event-reporter/v3 v3.8.0 h1:FYNR+MX5ypyG7UWpogDnD
 github.com/TheCacophonyProject/event-reporter/v3 v3.8.0/go.mod h1:WTppJtTBxduasM1Or5SAh4Mm0YrTDnprOChjnGYgyEI=
 github.com/TheCacophonyProject/go-api v0.0.0-20190923033957-174cea2ac81c/go.mod h1:FfMpa4cFhNXQ9tuKG18HO6yLExezcJhzjUjBOFocrQw=
 github.com/TheCacophonyProject/go-api v1.0.4/go.mod h1:F7UUNgsLhbw7hsiNBMRB9kQz9uXXosVmNToqImz7EA8=
-github.com/TheCacophonyProject/go-api v1.1.1 h1:CwEDE1uWgSCPLCpTx1RqyZds5BQsM5L1xeoF6h72DWY=
-github.com/TheCacophonyProject/go-api v1.1.1/go.mod h1:F7UUNgsLhbw7hsiNBMRB9kQz9uXXosVmNToqImz7EA8=
+github.com/TheCacophonyProject/go-api v1.2.1 h1:QS8mzStQHzb3oAqqwjoLqCvXsRM8fx7F9I7hpgKND5c=
+github.com/TheCacophonyProject/go-api v1.2.1/go.mod h1:F7UUNgsLhbw7hsiNBMRB9kQz9uXXosVmNToqImz7EA8=
 github.com/TheCacophonyProject/go-config v0.0.0-20190922224052-7c2a21bc6b88/go.mod h1:gPUJLVu408NRz9/P3BrsxzOzLc+KJLrv+jVdDw3RI0Y=
 github.com/TheCacophonyProject/go-config v1.9.0/go.mod h1:+y80PSRZudMYuVrYTGOvzc66NxVJWKS4TuU442vmvhY=
 github.com/TheCacophonyProject/go-utils v0.1.1 h1:VOt9EphEqRUYMqKJlJeliIarIMlCVKYGb1fdqM6b4YM=
