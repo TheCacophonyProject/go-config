@@ -1,8 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
-
 	"os"
 	"path"
 	"reflect"
@@ -130,7 +128,7 @@ func processAttiny(configDir string) (interface{}, error) {
 
 func yamlToStruct(configFile string, s interface{}) error {
 	log.Printf("reading '%v'", configFile)
-	buf, err := ioutil.ReadFile(configFile)
+	buf, err := os.ReadFile(configFile)
 	if err != nil && !os.IsNotExist(err) {
 		return err
 	}

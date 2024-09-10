@@ -264,15 +264,6 @@ func (s *SyncService) filterUnchangedSettings(mappedSettings, deviceSettings map
 	return filteredSettings
 }
 
-func (s *SyncService) fetchSettingsFromAPI() (map[string]interface{}, error) {
-	serverSettings, err := s.apiClient.GetDeviceSettings()
-	log.Printf("Received server settings: %+v", serverSettings)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get device settings from API: %v", err)
-	}
-	return serverSettings, nil
-}
-
 func (s *SyncService) readCurrentSettings() (map[string]interface{}, error) {
 	if err := s.config.Reload(); err != nil {
 		return nil, err

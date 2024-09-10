@@ -1,7 +1,6 @@
 package configtest
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
@@ -32,7 +31,7 @@ func WriteConfigFromFile(t *testing.T, configFile string, fsConfgiFile string, f
 	b := []byte{}
 	if configFile != "" {
 		var err error
-		b, err = ioutil.ReadFile(configFile)
+		b, err = os.ReadFile(configFile)
 		require.NoError(t, err)
 	}
 	return WriteConfigFromBytes(t, b, fsConfgiFile, fs)
