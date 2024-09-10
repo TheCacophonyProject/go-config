@@ -12,6 +12,4 @@ on:
 
 jobs:
   build:
-    uses: github.com/TheCacophonyProject/github-actions-templates/.github/workflows/ci.yml@main
-    with:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    uses: TheCacophonyProject/github-actions-templates/.github/workflows/go-ci-release.yml@V0.1.0
