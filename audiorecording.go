@@ -28,11 +28,13 @@ func init() {
 
 type AudioRecording struct {
 	AudioMode string `mapstructure:"audio-mode"`
+	AudioSeed uint32 `mapstructure:"random-seed"`
 }
 
 func DefaultAudioRecording() AudioRecording {
 	return AudioRecording{
 		AudioMode: "Disabled",
+		AudioSeed: 0,
 	}
 }
 
