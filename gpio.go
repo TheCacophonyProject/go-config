@@ -23,18 +23,26 @@ func init() {
 		key:         GPIOKey,
 		mapToStruct: gpioMapToStruct,
 		validate:    noValidateFunc,
+		defaultValue: func() interface{} {
+			return DefaultGPIO()
+		},
+		pointerValue: func() interface{} {
+			return &GPIO{}
+		},
 	}
 }
 
 type GPIO struct {
 	ThermalCameraPower string `mapstructure:"thermal-camera-power"`
 	ModemPower         string `mapstructure:"modem-power"`
+	UartTx             string `mapstructure:"uart-tx"`
 }
 
 func DefaultGPIO() GPIO {
 	return GPIO{
 		ThermalCameraPower: "GPIO23",
 		ModemPower:         "GPIO22",
+		UartTx:             "GPIO14",
 	}
 }
 

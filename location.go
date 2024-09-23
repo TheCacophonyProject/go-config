@@ -28,6 +28,12 @@ func init() {
 		key:         LocationKey,
 		mapToStruct: mapToLocation,
 		validate:    validateLocation,
+		defaultValue: func() interface{} {
+			return nil
+		},
+		pointerValue: func() interface{} {
+			return &Location{}
+		},
 	}
 	allSectionDecodeHookFuncs = append(allSectionDecodeHookFuncs, locationToMap)
 }

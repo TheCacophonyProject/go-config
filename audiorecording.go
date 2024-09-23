@@ -23,6 +23,12 @@ func init() {
 		key:         AudioRecordingKey,
 		mapToStruct: audioRecordingMapToStruct,
 		validate:    noValidateFunc,
+		defaultValue: func() interface{} {
+			return DefaultAudioRecording()
+		},
+		pointerValue: func() interface{} {
+			return &AudioRecording{}
+		},
 	}
 }
 

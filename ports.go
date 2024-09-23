@@ -23,6 +23,12 @@ func init() {
 		key:         PortsKey,
 		mapToStruct: portsMapToStruct,
 		validate:    noValidateFunc,
+		defaultValue: func() interface{} {
+			return DefaultPorts()
+		},
+		pointerValue: func() interface{} {
+			return &Ports{}
+		},
 	}
 }
 

@@ -24,6 +24,16 @@ func TestDefaults(t *testing.T) {
 	assert.Equal(t, DefaultWindowLocation(), location)
 }
 
+func TestLoadingPublicKeys(t *testing.T) {
+	defer newFs(t, "./test-files/test.toml")()
+
+	c, err := New(DefaultConfigDir)
+	require.NoError(t, err)
+
+	_, err = c.GetAllValues()
+	require.NoError(t, err)
+}
+
 func TestReadingConfigInDir(t *testing.T) {
 	defer newFs(t, "./test-files/test.toml")()
 	conf, err := New(DefaultConfigDir)

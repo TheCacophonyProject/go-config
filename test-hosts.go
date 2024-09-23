@@ -25,6 +25,12 @@ func init() {
 		key:         TestHostsKey,
 		mapToStruct: testHostsMapToStruct,
 		validate:    noValidateFunc,
+		defaultValue: func() interface{} {
+			return DefaultTestHosts()
+		},
+		pointerValue: func() interface{} {
+			return &TestHosts{}
+		},
 	}
 }
 

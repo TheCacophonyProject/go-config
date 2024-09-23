@@ -25,6 +25,12 @@ func init() {
 		key:         ThermalThrottlerKey,
 		mapToStruct: thermalThrottlerMapToStruct,
 		validate:    noValidateFunc,
+		defaultValue: func() interface{} {
+			return DefaultThermalThrottler()
+		},
+		pointerValue: func() interface{} {
+			return &ThermalThrottler{}
+		},
 	}
 }
 

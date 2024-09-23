@@ -23,6 +23,12 @@ func init() {
 		key:         SaltKey,
 		mapToStruct: saltMapToStruct,
 		validate:    noValidateFunc,
+		defaultValue: func() interface{} {
+			return DefaultSalt()
+		},
+		pointerValue: func() interface{} {
+			return &Salt{}
+		},
 	}
 }
 
