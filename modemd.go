@@ -30,6 +30,12 @@ func init() {
 		key:         ModemdKey,
 		mapToStruct: modemdMapToStruct,
 		validate:    noValidateFunc,
+		defaultValue: func() interface{} {
+			return DefaultModemd()
+		},
+		pointerValue: func() interface{} {
+			return &Modemd{}
+		},
 	}
 	allSectionDecodeHookFuncs = append(allSectionDecodeHookFuncs, modemdToMap)
 }

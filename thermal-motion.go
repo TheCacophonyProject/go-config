@@ -23,6 +23,12 @@ func init() {
 		key:         ThermalMotionKey,
 		mapToStruct: thermalMotionMapToStruct,
 		validate:    noValidateFunc,
+		defaultValue: func() interface{} {
+			return DefaultThermalMotion("lepton3.5")
+		},
+		pointerValue: func() interface{} {
+			return &ThermalMotion{}
+		},
 	}
 }
 

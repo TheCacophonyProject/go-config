@@ -23,6 +23,13 @@ func init() {
 		key:         LeptonKey,
 		mapToStruct: leptonMapToStruct,
 		validate:    noValidateFunc,
+
+		defaultValue: func() interface{} {
+			return DefaultLepton()
+		},
+		pointerValue: func() interface{} {
+			return &Lepton{}
+		},
 	}
 }
 

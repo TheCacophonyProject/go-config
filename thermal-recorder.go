@@ -25,6 +25,12 @@ func init() {
 		key:         ThermalRecorderKey,
 		mapToStruct: thermalRecorderMapToStruct,
 		validate:    noValidateFunc,
+		defaultValue: func() interface{} {
+			return DefaultThermalRecorder()
+		},
+		pointerValue: func() interface{} {
+			return &ThermalRecorder{}
+		},
 	}
 }
 

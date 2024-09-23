@@ -26,6 +26,12 @@ func init() {
 		key:         WindowsKey,
 		mapToStruct: windowsMapToStruct,
 		validate:    noValidateFunc,
+		defaultValue: func() interface{} {
+			return DefaultWindows()
+		},
+		pointerValue: func() interface{} {
+			return &Windows{}
+		},
 	}
 }
 
@@ -58,7 +64,6 @@ func windowsMapToStruct(m map[string]interface{}) (interface{}, error) {
 	if err := decodeStructFromMap(&s, m, nil); err != nil {
 		return nil, err
 	}
-
 
 	timeDurs := []string{s.StartRecording, s.StopRecording, s.PowerOff, s.PowerOn}
 	for _, timeDur := range timeDurs {

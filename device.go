@@ -23,6 +23,12 @@ func init() {
 		key:         DeviceKey,
 		mapToStruct: deviceMapToStruct,
 		validate:    noValidateFunc,
+		defaultValue: func() interface{} {
+			return nil
+		},
+		pointerValue: func() interface{} {
+			return &Device{}
+		},
 	}
 }
 

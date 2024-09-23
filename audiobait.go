@@ -23,6 +23,12 @@ func init() {
 		key:         AudioBaitKey,
 		mapToStruct: audioBaitMapToStruct,
 		validate:    noValidateFunc,
+		defaultValue: func() interface{} {
+			return DefaultAudioBait()
+		},
+		pointerValue: func() interface{} {
+			return &AudioBait{}
+		},
 	}
 }
 

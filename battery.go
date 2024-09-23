@@ -35,6 +35,12 @@ func init() {
 		key:         BatteryKey,
 		mapToStruct: batteryMapToStruct,
 		validate:    noValidateFunc,
+		defaultValue: func() interface{} {
+			return DefaultBattery()
+		},
+		pointerValue: func() interface{} {
+			return &Battery{}
+		},
 	}
 }
 

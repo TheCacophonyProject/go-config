@@ -36,6 +36,10 @@ import (
 	toml "github.com/pelletier/go-toml"
 )
 
+type ConfigArgs struct {
+	ConfigDir string `arg:"--config-dir" default:"/etc/cacophony/" help:"path to configuration directory"`
+}
+
 type Config struct {
 	v         *viper.Viper
 	fileLock  *flock.Flock
@@ -51,9 +55,11 @@ const (
 )
 
 type section struct {
-	key         string
-	mapToStruct func(map[string]interface{}) (interface{}, error)
-	validate    func(interface{}) error
+	key          string
+	mapToStruct  func(map[string]interface{}) (interface{}, error)
+	validate     func(interface{}) error
+	defaultValue func() interface{}
+	pointerValue func() interface{}
 }
 
 var (
@@ -74,6 +80,45 @@ var (
 	lockTimeout         = 10 * time.Second
 	mapStrInterfaceType = reflect.TypeOf(map[string]interface{}{})
 )
+
+func GetDefaults() map[string]interface{} {
+	configDefaults := make(map[string]interface{})
+	for key, section := range allSections {
+		if key == SecretsKey {
+			continue // Skip secrets
+		}
+		configDefaults[key] = section.defaultValue()
+	}
+	return configDefaults
+}
+
+func GetAllSections() map[string]interface{} {
+	configValues := make(map[string]interface{})
+	for key, section := range allSections {
+		if key == SecretsKey {
+			continue // Skip secrets
+		}
+		configValues[key] = section.pointerValue()
+	}
+
+	return configValues
+}
+
+func (c *Config) GetAllValues() (map[string]interface{}, error) {
+	configValues := GetAllSections()
+
+	for section, sectionStruct := range configValues {
+		if sectionStruct == nil {
+			continue
+		}
+		err := c.Unmarshal(section, sectionStruct)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return configValues, nil
+}
 
 // New created a new config and loads files from the given directory
 func New(dir string) (*Config, error) {
