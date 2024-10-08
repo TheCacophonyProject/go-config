@@ -65,6 +65,23 @@ func TestMapServerSettingsToConfig(t *testing.T) {
 			},
 			expected: map[string]interface{}{},
 		},
+		{
+			name: "Map Audio Recording settings",
+			serverSettings: map[string]interface{}{
+				"audioRecording": map[string]interface{}{
+					"audioMode": "AudioOnly",
+					"audioSeed": 42,
+					"updated":   "2023-09-01T12:00:00Z",
+				},
+			},
+			expected: map[string]interface{}{
+				"audio-recording": map[string]interface{}{
+					"audio-mode":  "AudioOnly",
+					"random-seed": 42,
+					"updated":     time.Date(2023, 9, 1, 12, 0, 0, 0, time.UTC),
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -79,6 +96,9 @@ func TestFilterUnchangedSettings(t *testing.T) {
 	syncService := &SyncService{}
 
 	now := time.Now()
+	past := now.Add(-1 * time.Hour)
+	future := now.Add(1 * time.Hour)
+
 	testCases := []struct {
 		name           string
 		mappedSettings map[string]interface{}
@@ -106,7 +126,7 @@ func TestFilterUnchangedSettings(t *testing.T) {
 			mappedSettings: map[string]interface{}{
 				"windows": map[string]interface{}{
 					"start-recording": "+30m",
-					"updated":         time.Now().Add(-1 * time.Hour),
+					"updated":         past,
 				},
 			},
 			deviceSettings: map[string]interface{}{
@@ -122,19 +142,19 @@ func TestFilterUnchangedSettings(t *testing.T) {
 			mappedSettings: map[string]interface{}{
 				"windows": map[string]interface{}{
 					"start-recording": "+40m",
-					"updated":         now,
+					"updated":         future,
 				},
 			},
 			deviceSettings: map[string]interface{}{
 				"windows": map[string]interface{}{
 					"startRecording": "+30m",
-					"updated":        time.Now().Add(-1 * time.Hour),
+					"updated":        now,
 				},
 			},
 			expected: map[string]interface{}{
 				"windows": map[string]interface{}{
 					"start-recording": "+40m",
-					"updated":         now,
+					"updated":         future,
 				},
 			},
 		},
@@ -168,20 +188,44 @@ func TestFilterUnchangedSettings(t *testing.T) {
 			mappedSettings: map[string]interface{}{
 				"windows": map[string]interface{}{
 					"start-recording": "+30m",
-					"updated":         time.Now(),
+					"updated":         now,
 				},
 				"unknown": map[string]interface{}{
 					"key":     "value",
-					"updated": time.Now(),
+					"updated": now,
 				},
 			},
 			deviceSettings: map[string]interface{}{
 				"windows": map[string]interface{}{
 					"startRecording": "+30m",
-					"updated":        time.Now(),
+					"updated":        now,
 				},
 			},
 			expected: map[string]interface{}{},
+		},
+		{
+			name: "Audio Recording settings updated",
+			mappedSettings: map[string]interface{}{
+				"audio-recording": map[string]interface{}{
+					"audio-mode":  "AudioAndThermal",
+					"random-seed": 123,
+					"updated":     future,
+				},
+			},
+			deviceSettings: map[string]interface{}{
+				"audio-recording": map[string]interface{}{
+					"audioMode": "AudioOnly",
+					"audioSeed": 42,
+					"updated":   now,
+				},
+			},
+			expected: map[string]interface{}{
+				"audio-recording": map[string]interface{}{
+					"audio-mode":  "AudioAndThermal",
+					"random-seed": 123,
+					"updated":     future,
+				},
+			},
 		},
 	}
 

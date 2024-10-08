@@ -90,6 +90,29 @@ var ConfigSections = Sections{
 		},
 	},
 	{
+		Name:   "audioRecording",
+		Key:    config.AudioRecordingKey,
+		Config: &config.AudioRecording{},
+		Mappings: []Mapping{
+			{
+				APIKey:    "audioMode",
+				ConfigKey: "AudioMode",
+				MapKey:    "audio-mode",
+			},
+			{
+				APIKey:    "audioSeed",
+				ConfigKey: "AudioSeed",
+				MapKey:    "random-seed",
+			},
+			{
+				APIKey:    "updated",
+				ConfigKey: "Updated",
+				MapKey:    "updated",
+				Converter: stringToTimeConverter,
+			},
+		},
+	},
+	{
 		Name:   "windows",
 		Key:    config.WindowsKey,
 		Config: &config.Windows{},
@@ -420,8 +443,10 @@ func isEmptyValue(v interface{}) bool {
 	}
 }
 
-var log = logging.NewLogger("info")
-var version = "<not set>"
+var (
+	log     = logging.NewLogger("info")
+	version = "<not set>"
+)
 
 type Args struct {
 	logging.LogArgs
