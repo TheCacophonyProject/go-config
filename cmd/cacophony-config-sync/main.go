@@ -204,15 +204,14 @@ func (s *SyncService) syncSettings() error {
 	}
 	log.Printf("Device Settings: %+v", deviceSettings)
 
-	// Send config to server to get a merged config
+	// Send config to server and get the updated settings
 	serverSettings, err := s.uploadSettingsToAPI(deviceSettings)
 	if err != nil {
-		return fmt.Errorf("failed to fetch settings from API: %v", err)
+		return fmt.Errorf("failed to synchronize settings with API: %v", err)
 	}
 
 	// Map server settings to expected config structure
 	mappedSettings := s.mapServerSettingsToConfig(serverSettings)
-
 	// Filter out unchanged settings
 	filteredSettings := s.filterUnchangedSettings(mappedSettings, deviceSettings)
 
@@ -338,11 +337,18 @@ func (s *SyncService) mapServerSettingsToConfig(serverSettings map[string]interf
 						// If this is the "updated" field, convert it to time.Time
 						if mapping.APIKey == "updated" {
 							if timeStr, ok := value.(string); ok {
-								parsedTime, err := time.Parse(time.RFC3339, timeStr)
+								parsedTime, err := time.Parse(time.RFC3339Nano, timeStr) // Changed here
 								if err != nil {
-									log.Printf("Error parsing time for %s in section %s: %v", mapping.APIKey, section.Name, err)
-									// If parsing fails, we'll keep the original string value
-									sectionSettings[mapping.MapKey] = value
+									parsedTime, err := time.Parse(time.RFC3339Nano, timeStr) // Changed here
+									if err != nil {
+										log.Printf("Error parsing time for %s in section %s: %v", mapping.APIKey, section.Name, err)
+										// If parsing fails, we'll keep the original string value
+										sectionSettings[mapping.MapKey] = value
+									} else {
+										sectionSettings[mapping.MapKey] = parsedTime
+										log.Printf("Converted time for %s in section %s: %v", mapping.APIKey, section.Name, parsedTime)
+									}
+
 								} else {
 									sectionSettings[mapping.MapKey] = parsedTime
 									log.Printf("Converted time for %s in section %s: %v", mapping.APIKey, section.Name, parsedTime)

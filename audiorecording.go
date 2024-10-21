@@ -16,6 +16,8 @@
 
 package config
 
+import "time"
+
 const AudioRecordingKey = "audio-recording"
 
 func init() {
@@ -33,8 +35,9 @@ func init() {
 }
 
 type AudioRecording struct {
-	AudioMode string `mapstructure:"audio-mode"`
-	AudioSeed uint32 `mapstructure:"random-seed"`
+	AudioMode string    `mapstructure:"audio-mode"`
+	AudioSeed uint32    `mapstructure:"random-seed"`
+	Updated   time.Time `mapstructure:"updated"`
 }
 
 func DefaultAudioRecording() AudioRecording {
