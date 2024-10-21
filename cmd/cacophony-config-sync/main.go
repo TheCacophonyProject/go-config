@@ -337,18 +337,10 @@ func (s *SyncService) mapServerSettingsToConfig(serverSettings map[string]interf
 						// If this is the "updated" field, convert it to time.Time
 						if mapping.APIKey == "updated" {
 							if timeStr, ok := value.(string); ok {
-								parsedTime, err := time.Parse(time.RFC3339Nano, timeStr) // Changed here
+								parsedTime, err := time.Parse(time.RFC3339Nano, timeStr)
 								if err != nil {
-									parsedTime, err := time.Parse(time.RFC3339Nano, timeStr) // Changed here
-									if err != nil {
-										log.Printf("Error parsing time for %s in section %s: %v", mapping.APIKey, section.Name, err)
-										// If parsing fails, we'll keep the original string value
-										sectionSettings[mapping.MapKey] = value
-									} else {
-										sectionSettings[mapping.MapKey] = parsedTime
-										log.Printf("Converted time for %s in section %s: %v", mapping.APIKey, section.Name, parsedTime)
-									}
-
+									log.Printf("Error parsing time for %s in section %s: %v", mapping.APIKey, section.Name, err)
+									sectionSettings[mapping.MapKey] = value
 								} else {
 									sectionSettings[mapping.MapKey] = parsedTime
 									log.Printf("Converted time for %s in section %s: %v", mapping.APIKey, section.Name, parsedTime)
