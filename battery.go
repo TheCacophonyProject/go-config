@@ -57,8 +57,7 @@ func batteryValidateFunc(battery interface{}) error {
 	return nil
 }
 
-// Battery
-// Only CustomBatterytype or PresetBatteryType should be set. Not both.
+// Battery struct. Only CustomBatteryYype or PresetBatteryType should be set. Not both.
 type Battery struct {
 	EnableVoltageReadings   bool         `mapstructure:"enable-voltage-readings"`
 	CustomBatteryType       *BatteryType `mapstructure:"custom-battery-type"`       // When wanting to specify a custom battery type
