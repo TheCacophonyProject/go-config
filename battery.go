@@ -54,17 +54,25 @@ func init() {
 
 // Battery represents the main battery configuration
 type Battery struct {
-	EnableVoltageReadings   bool         `mapstructure:"enable-voltage-readings"`
-	CustomBatteryType       *BatteryType `mapstructure:"custom-battery-type"`
-	PresetBatteryType       string       `mapstructure:"preset-battery-type"`
-	MinimumVoltageDetection float32      `mapstructure:"minimum-voltage-detection"`
+	EnableVoltageReadings       bool         `mapstructure:"enable-voltage-readings"`
+	CustomBatteryType           *BatteryType `mapstructure:"custom-battery-type"`
+	PresetBatteryType           string       `mapstructure:"preset-battery-type"`
+	MinimumVoltageDetection     float32      `mapstructure:"minimum-voltage-detection"`
+	EnableDepletionEstimate     bool         `mapstructure:"enable-depletion-estimate"`
+	DepletionHistoryHours       int          `mapstructure:"depletion-history-hours"`
+	DepletionWarningHours       float32      `mapstructure:"depletion-warning-hours"`
+	PowerSavingDischargeRatio   float32      `mapstructure:"power-saving-discharge-ratio"`
 }
 
 // DefaultBattery returns default battery configuration
 func DefaultBattery() Battery {
 	return Battery{
-		EnableVoltageReadings:   true,
-		MinimumVoltageDetection: 1.0,
+		EnableVoltageReadings:     true,
+		MinimumVoltageDetection:   1.0,
+		EnableDepletionEstimate:   true,
+		DepletionHistoryHours:     48,
+		DepletionWarningHours:     12.0,
+		PowerSavingDischargeRatio: 0.3,
 	}
 }
 
@@ -275,6 +283,19 @@ func batteryValidateFunc(battery any) error {
 
 	if b.MinimumVoltageDetection < 0 {
 		return fmt.Errorf("minimum voltage detection must be >= 0")
+	}
+
+	// Validate depletion estimation settings
+	if b.DepletionHistoryHours < 1 || b.DepletionHistoryHours > 168 { // 1 hour to 1 week
+		return fmt.Errorf("depletion history hours must be between 1 and 168")
+	}
+
+	if b.DepletionWarningHours < 0 || b.DepletionWarningHours > 720 { // 0 to 30 days
+		return fmt.Errorf("depletion warning hours must be between 0 and 720")
+	}
+
+	if b.PowerSavingDischargeRatio < 0 || b.PowerSavingDischargeRatio > 1 {
+		return fmt.Errorf("power saving discharge ratio must be between 0 and 1")
 	}
 
 	return nil
