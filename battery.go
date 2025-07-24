@@ -57,6 +57,7 @@ type Battery struct {
 	EnableVoltageReadings       bool         `mapstructure:"enable-voltage-readings"`
 	CustomBatteryType           *BatteryType `mapstructure:"custom-battery-type"`
 	PresetBatteryType           string       `mapstructure:"preset-battery-type"`
+	ManuallyConfigured          bool         `mapstructure:"manually-configured"`
 	MinimumVoltageDetection     float32      `mapstructure:"minimum-voltage-detection"`
 	EnableDepletionEstimate     bool         `mapstructure:"enable-depletion-estimate"`
 	DepletionHistoryHours       int          `mapstructure:"depletion-history-hours"`
@@ -213,6 +214,47 @@ func (b *Battery) GetBatteryType() *BatteryType {
 	}
 
 	return nil // Auto-detect mode
+}
+
+// IsManuallyConfigured returns true if battery type is manually set by user
+func (b *Battery) IsManuallyConfigured() bool {
+	return b.ManuallyConfigured
+}
+
+// SetManualBatteryType sets a manual battery type override
+func (b *Battery) SetManualBatteryType(presetName string) error {
+	// Validate preset name
+	for _, preset := range PresetBatteryTypes {
+		if strings.EqualFold(preset.Name, presetName) {
+			b.PresetBatteryType = preset.Name
+			b.ManuallyConfigured = true
+			b.CustomBatteryType = nil // Clear custom type if setting preset
+			return nil
+		}
+	}
+	return fmt.Errorf("unknown preset battery type: %s", presetName)
+}
+
+// ClearManualConfiguration clears manual battery type configuration and returns to auto-detection
+func (b *Battery) ClearManualConfiguration() {
+	b.ManuallyConfigured = false
+	// Keep the current preset/custom type but mark as not manually configured
+	// This allows auto-detection to take over while preserving the last known good type
+}
+
+// GetAvailableBatteryTypes returns list of available preset battery types for manual selection
+func GetAvailableBatteryTypes() []map[string]interface{} {
+	result := make([]map[string]interface{}, len(PresetBatteryTypes))
+	for i, preset := range PresetBatteryTypes {
+		result[i] = map[string]interface{}{
+			"name":        preset.Name,
+			"chemistry":   preset.Chemistry,
+			"minVoltage":  preset.MinVoltage,
+			"maxVoltage":  preset.MaxVoltage,
+			"description": fmt.Sprintf("%s (%s, %.1f-%.1fV)", preset.Name, preset.Chemistry, preset.MinVoltage, preset.MaxVoltage),
+		}
+	}
+	return result
 }
 
 // batteryValidateFunc validates battery configuration
