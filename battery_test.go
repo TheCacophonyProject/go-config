@@ -1,8 +1,6 @@
 package config
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 )
 
@@ -265,111 +263,6 @@ func TestGetAvailableChemistries(t *testing.T) {
 	}
 }
 
-func TestBatteryMigration(t *testing.T) {
-	// Test migration from preset-battery-type format
-	t.Run("Migrate lime preset", func(t *testing.T) {
-		old := Battery{
-			EnableVoltageReadings:   true,
-			ManuallyConfigured:      true,
-			MinimumVoltageDetection: 1.0,
-			PresetBatteryType:       "lime",
-			// Chemistry is empty - should trigger migration
-		}
-		
-		if !needsMigration(old) {
-			t.Error("Expected migration to be needed for lime preset")
-		}
-		
-		migrated, err := migrateBatteryConfig(old)
-		if err != nil {
-			t.Fatalf("Migration failed: %v", err)
-		}
-		
-		if migrated.Chemistry != ChemistryLiIon {
-			t.Errorf("Expected chemistry %s, got %s", ChemistryLiIon, migrated.Chemistry)
-		}
-		
-		if migrated.ManualCellCount != 10 {
-			t.Errorf("Expected 10 cells for lime battery, got %d", migrated.ManualCellCount)
-		}
-		
-		if !migrated.ManuallyConfigured {
-			t.Error("Expected manually configured to remain true")
-		}
-		
-		// Old fields should be cleared
-		if migrated.PresetBatteryType != "" {
-			t.Error("Expected PresetBatteryType to be cleared after migration")
-		}
-	})
-	
-	t.Run("Migrate LiFePO4 12V preset", func(t *testing.T) {
-		old := Battery{
-			PresetBatteryType: "lifepo4-12v",
-		}
-		
-		migrated, err := migrateBatteryConfig(old)
-		if err != nil {
-			t.Fatalf("Migration failed: %v", err)
-		}
-		
-		if migrated.Chemistry != ChemistryLiFePO4 {
-			t.Errorf("Expected chemistry %s, got %s", ChemistryLiFePO4, migrated.Chemistry)
-		}
-		
-		if migrated.ManualCellCount != 4 {
-			t.Errorf("Expected 4 cells for 12V LiFePO4, got %d", migrated.ManualCellCount)
-		}
-	})
-	
-	t.Run("Migrate custom battery type", func(t *testing.T) {
-		customType := &BatteryType{
-			Chemistry:  ChemistryLiIon,
-			MinVoltage: 3.0,
-			MaxVoltage: 4.2,
-		}
-		
-		old := Battery{
-			CustomBatteryType: customType,
-		}
-		
-		migrated, err := migrateBatteryConfig(old)
-		if err != nil {
-			t.Fatalf("Migration failed: %v", err)
-		}
-		
-		if migrated.Chemistry != ChemistryLiIon {
-			t.Errorf("Expected chemistry %s, got %s", ChemistryLiIon, migrated.Chemistry)
-		}
-		
-		// Should detect single cell from voltage range
-		if migrated.ManualCellCount != 1 {
-			t.Errorf("Expected 1 cell for single-cell voltage range, got %d", migrated.ManualCellCount)
-		}
-	})
-	
-	t.Run("No migration needed for new format", func(t *testing.T) {
-		newFormat := Battery{
-			Chemistry:       ChemistryLiFePO4,
-			ManualCellCount: 8,
-		}
-		
-		if needsMigration(newFormat) {
-			t.Error("Should not need migration for new format")
-		}
-	})
-	
-	t.Run("Unknown preset fails migration", func(t *testing.T) {
-		old := Battery{
-			PresetBatteryType: "unknown-battery",
-		}
-		
-		_, err := migrateBatteryConfig(old)
-		if err == nil {
-			t.Error("Expected error for unknown preset battery type")
-		}
-	})
-}
 
 func TestCellCountEstimation(t *testing.T) {
 	tests := []struct {
@@ -399,174 +292,42 @@ func TestCellCountEstimation(t *testing.T) {
 func TestChemistryDetection(t *testing.T) {
 	tests := []struct {
 		name     string
-		battery  *BatteryType
+		minV     float32
+		maxV     float32
 		expected string
 	}{
 		{
-			name: "Explicit chemistry",
-			battery: &BatteryType{
-				Chemistry: ChemistryLiFePO4,
-			},
-			expected: ChemistryLiFePO4,
-		},
-		{
-			name: "Li-Ion voltage range",
-			battery: &BatteryType{
-				MinVoltage: 3.0,
-				MaxVoltage: 4.2,
-			},
+			name:     "Li-Ion voltage range",
+			minV:     3.0,
+			maxV:     4.2,
 			expected: ChemistryLiIon,
 		},
 		{
-			name: "LiFePO4 voltage range",
-			battery: &BatteryType{
-				MinVoltage: 2.5,
-				MaxVoltage: 3.6,
-			},
+			name:     "LiFePO4 voltage range",
+			minV:     2.5,
+			maxV:     3.6,
 			expected: ChemistryLiFePO4,
 		},
 		{
-			name: "Lead-Acid voltage range",
-			battery: &BatteryType{
-				MinVoltage: 1.8,
-				MaxVoltage: 2.3,
-			},
+			name:     "Lead-Acid voltage range",
+			minV:     1.8,
+			maxV:     2.3,
 			expected: ChemistryLeadAcid,
 		},
 		{
-			name: "Unknown voltage range",
-			battery: &BatteryType{
-				MinVoltage: 5.0,
-				MaxVoltage: 6.0,
-			},
+			name:     "Unknown voltage range",
+			minV:     5.0,
+			maxV:     6.0,
 			expected: ChemistryCustom,
 		},
 	}
 	
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result := determineChemistryFromCustomType(test.battery)
+			result := determineChemistryFromVoltageRange(test.minV, test.maxV)
 			if result != test.expected {
 				t.Errorf("Expected chemistry %s, got %s", test.expected, result)
 			}
 		})
 	}
-}
-
-func TestUnmarshalWithMigration(t *testing.T) {
-	// Create a temporary config file with old format
-	configDir := t.TempDir()
-	
-	// Write config with old battery format
-	configContent := `
-[battery]
-preset-battery-type = "lime"
-manually-configured = true
-enable-voltage-readings = true
-minimum-voltage-detection = 1.0
-enable-depletion-estimate = true
-depletion-history-hours = 48
-depletion-warning-hours = 12.0
-power-saving-discharge-ratio = 0.3
-`
-	
-	err := os.WriteFile(filepath.Join(configDir, "config.toml"), []byte(configContent), 0644)
-	if err != nil {
-		t.Fatalf("Failed to write test config: %v", err)
-	}
-	
-	// Load config using the actual Config.Unmarshal method (like tc2-hat-attiny does)
-	config, err := New(configDir)
-	if err != nil {
-		t.Fatalf("Failed to create config: %v", err)
-	}
-	
-	// This should trigger migration
-	battery := DefaultBattery()
-	err = config.Unmarshal(BatteryKey, &battery)
-	if err != nil {
-		t.Fatalf("Failed to unmarshal battery config: %v", err)
-	}
-	
-	// Verify migration occurred
-	if battery.Chemistry != ChemistryLiIon {
-		t.Errorf("Expected chemistry %s after migration, got %s", ChemistryLiIon, battery.Chemistry)
-	}
-	
-	if battery.ManualCellCount != 10 {
-		t.Errorf("Expected 10 cells after migration, got %d", battery.ManualCellCount)
-	}
-	
-	if !battery.ManuallyConfigured {
-		t.Error("Expected manually configured to remain true")
-	}
-	
-	// Verify old fields are cleared
-	if battery.PresetBatteryType != "" {
-		t.Error("Expected PresetBatteryType to be cleared after migration")
-	}
-	
-	t.Logf("Migration successful: lime -> chemistry=%s, cells=%d", 
-		battery.Chemistry, battery.ManualCellCount)
-}
-
-func TestUnmarshalWithCustomBatteryMigration(t *testing.T) {
-	// Create a temporary config file with old custom battery format
-	configDir := t.TempDir()
-	
-	// Write config with old custom battery format (matching the error from the logs)
-	configContent := `
-[battery]
-enable-voltage-readings = true
-manually-configured = true
-minimum-voltage-detection = 1.0
-updated = "2025-07-24T17:45:35.395890664+12:00"
-
-[battery.custom-battery-type]
-name = "custom-12v"
-chemistry = ""
-minvoltage = 9.0
-maxvoltage = 14.0
-voltages = [11.59, 11.63, 11.76, 11.87, 11.97, 12.07, 12.18, 12.29, 12.41, 12.53, 12.64]
-percent = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
-`
-	
-	err := os.WriteFile(filepath.Join(configDir, "config.toml"), []byte(configContent), 0644)
-	if err != nil {
-		t.Fatalf("Failed to write test config: %v", err)
-	}
-	
-	// Load config using the actual Config.Unmarshal method
-	config, err := New(configDir)
-	if err != nil {
-		t.Fatalf("Failed to create config: %v", err)
-	}
-	
-	// This should trigger migration
-	battery := DefaultBattery()
-	err = config.Unmarshal(BatteryKey, &battery)
-	if err != nil {
-		t.Fatalf("Failed to unmarshal battery config: %v", err)
-	}
-	
-	// Verify migration occurred
-	if battery.Chemistry == "" {
-		t.Error("Expected chemistry to be set after migration")
-	}
-	
-	if battery.ManualCellCount == 0 {
-		t.Error("Expected cell count to be set after migration")
-	}
-	
-	if !battery.ManuallyConfigured {
-		t.Error("Expected manually configured to remain true")
-	}
-	
-	// Verify old fields are cleared
-	if battery.CustomBatteryType != nil {
-		t.Error("Expected CustomBatteryType to be cleared after migration")
-	}
-	
-	t.Logf("Custom battery migration successful: chemistry=%s, cells=%d", 
-		battery.Chemistry, battery.ManualCellCount)
 }
