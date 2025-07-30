@@ -18,8 +18,6 @@ package config
 
 import (
 	"fmt"
-	"log"
-	"math"
 )
 
 // Battery configuration constants
@@ -43,10 +41,10 @@ func init() {
 		key:         BatteryKey,
 		mapToStruct: batteryMapToStruct,
 		validate:    batteryValidateFunc,
-		defaultValue: func() interface{} {
+		defaultValue: func() any {
 			return DefaultBattery()
 		},
-		pointerValue: func() interface{} {
+		pointerValue: func() any {
 			return &Battery{}
 		},
 	}
@@ -62,11 +60,7 @@ type Battery struct {
 	EnableDepletionEstimate     bool    `mapstructure:"enable-depletion-estimate"`
 	DepletionHistoryHours       int     `mapstructure:"depletion-history-hours"`
 	DepletionWarningHours       float32 `mapstructure:"depletion-warning-hours"`
-	Updated                     interface{} `mapstructure:"updated,omitempty"` // Standard config timestamp
-	
-	// Deprecated: Migration fields for old configuration format
-	PresetBatteryType  string       `mapstructure:"preset-battery-type,omitempty"`
-	CustomBatteryType  *BatteryType `mapstructure:"custom-battery-type,omitempty"`
+	Updated                     any `mapstructure:"updated,omitempty"` // Standard config timestamp
 }
 
 // DefaultBattery returns default battery configuration
@@ -418,278 +412,9 @@ func batteryValidateFunc(battery any) error {
 // batteryMapToStruct converts map to Battery struct
 func batteryMapToStruct(m map[string]any) (any, error) {
 	var s Battery
-	
-	// Check if migration is needed before decoding
-	hasOldFields := m["preset-battery-type"] != nil || m["custom-battery-type"] != nil
-	hasNewFields := m["chemistry"] != nil || m["manual-cell-count"] != nil
-	
-	if hasOldFields && !hasNewFields {
-		// Perform migration on the map before decoding
-		migratedMap, err := migrateBatteryMap(m)
-		if err != nil {
-			return nil, fmt.Errorf("failed to migrate battery config: %w", err)
-		}
-		m = migratedMap
-		log.Printf("Battery configuration migrated successfully")
-	}
-	
 	if err := decodeStructFromMap(&s, m, nil); err != nil {
 		return nil, err
 	}
-
 	return s, nil
 }
 
-// migrateBatteryMap migrates a battery configuration map from old format to new format
-func migrateBatteryMap(m map[string]interface{}) (map[string]interface{}, error) {
-	// Create a copy of the map to avoid modifying the original
-	result := make(map[string]interface{})
-	for k, v := range m {
-		result[k] = v
-	}
-	
-	// Handle preset battery type migration
-	if presetTypeRaw := m["preset-battery-type"]; presetTypeRaw != nil {
-		presetType, ok := presetTypeRaw.(string)
-		if !ok {
-			return nil, fmt.Errorf("preset-battery-type must be a string")
-		}
-		if presetType != "" {
-			chemistry, cellCount, err := migratePresetBatteryType(presetType)
-			if err != nil {
-				return nil, err
-			}
-			
-			result["chemistry"] = chemistry
-			result["manual-cell-count"] = cellCount
-			result["manually-configured"] = true
-			
-			// Remove old field
-			delete(result, "preset-battery-type")
-			
-			log.Printf("Migrated preset battery type '%s' to chemistry '%s' with %d cells", 
-				presetType, chemistry, cellCount)
-		}
-	}
-	
-	// Handle custom battery type migration
-	if customTypeRaw := m["custom-battery-type"]; customTypeRaw != nil {
-		customType, ok := customTypeRaw.(map[string]interface{})
-		if !ok {
-			return nil, fmt.Errorf("custom-battery-type must be a map")
-		}
-		
-		chemistry, cellCount := migrateCustomBatteryType(customType)
-		
-		result["chemistry"] = chemistry
-		if cellCount > 0 {
-			result["manual-cell-count"] = cellCount
-		}
-		result["manually-configured"] = true
-		
-		// Remove old field
-		delete(result, "custom-battery-type")
-		
-		log.Printf("Migrated custom battery type to chemistry '%s' with %d cells", 
-			chemistry, cellCount)
-	}
-	
-	// Don't set Updated field during migration - let it be handled naturally
-	delete(result, "updated")
-	
-	return result, nil
-}
-
-
-// migratePresetBatteryType converts preset battery type to chemistry and cell count
-func migratePresetBatteryType(presetType string) (string, int, error) {
-	// Map old preset types to new chemistry
-	presetToChemistry := map[string]string{
-		"lime":           ChemistryLiIon,    // Lime batteries are Li-Ion
-		"li-ion":         ChemistryLiIon,
-		"lifepo4-6v":     ChemistryLiFePO4,
-		"lifepo4-12v":    ChemistryLiFePO4,
-		"lifepo4-24v":    ChemistryLiFePO4,
-		"lead-acid-12v":  ChemistryLeadAcid,
-		"lead-acid-24v":  ChemistryLeadAcid,
-	}
-	
-	chemistry, exists := presetToChemistry[presetType]
-	if !exists {
-		return "", 0, fmt.Errorf("unknown preset battery type for migration: %s", presetType)
-	}
-	
-	cellCount := estimateCellCountFromPreset(presetType)
-	return chemistry, cellCount, nil
-}
-
-// migrateCustomBatteryType converts custom battery type to chemistry and cell count
-func migrateCustomBatteryType(customType map[string]interface{}) (string, int) {
-	// Extract values from map
-	var minV, maxV float32
-	var chemistry string
-	
-	if v, ok := customType["chemistry"].(string); ok {
-		chemistry = v
-	}
-	
-	// Handle both new and old field names - need to handle various numeric types
-	if v := customType["minvoltage"]; v != nil {
-		minV = toFloat32(v)
-	} else if v := customType["minv"]; v != nil {
-		minV = toFloat32(v)
-	}
-	
-	if v := customType["maxvoltage"]; v != nil {
-		maxV = toFloat32(v)
-	} else if v := customType["maxv"]; v != nil {
-		maxV = toFloat32(v)
-	}
-	
-	// Determine chemistry if not specified
-	if chemistry == "" && minV > 0 && maxV > 0 {
-		chemistry = determineChemistryFromVoltageRange(minV, maxV)
-	}
-	
-	if chemistry == "" {
-		chemistry = ChemistryCustom
-	}
-	
-	// Estimate cell count
-	cellCount := 0
-	if minV > 0 && maxV > 0 {
-		avgVoltage := (minV + maxV) / 2
-		if avgVoltage > 5.0 {
-			// Likely pack voltage
-			cellCount = estimateCellCountFromPackVoltage(minV, maxV)
-		} else {
-			// Likely per-cell voltage
-			cellCount = estimateCellCountFromVoltageRange(minV, maxV, chemistry)
-		}
-	}
-	
-	return chemistry, cellCount
-}
-
-// toFloat32 converts various numeric types to float32
-func toFloat32(v interface{}) float32 {
-	switch val := v.(type) {
-	case float32:
-		return val
-	case float64:
-		return float32(val)
-	case int:
-		return float32(val)
-	case int64:
-		return float32(val)
-	default:
-		return 0
-	}
-}
-
-// determineChemistryFromVoltageRange tries to determine chemistry from voltage range
-func determineChemistryFromVoltageRange(minV, maxV float32) string {
-	// LiFePO4: 2.5-3.65V per cell (narrower range, check first)
-	if minV >= 2.4 && maxV <= 3.7 {
-		return ChemistryLiFePO4
-	}
-	
-	// Li-Ion: 3.0-4.3V per cell  
-	if minV >= 2.9 && maxV <= 4.4 {
-		return ChemistryLiIon
-	}
-	
-	// Lead-Acid: 1.8-2.4V per cell
-	if minV >= 1.7 && maxV <= 2.5 {
-		return ChemistryLeadAcid
-	}
-	
-	return ChemistryCustom
-}
-
-// estimateCellCountFromPreset estimates cell count based on old preset name
-func estimateCellCountFromPreset(presetName string) int {
-	switch presetName {
-	case "lime":
-		return 10 // Lime batteries are typically 10S Li-Ion (around 37V nominal)
-	case "li-ion":
-		return 1  // Single cell Li-Ion
-	case "lifepo4-6v":
-		return 2  // 6V = 2S LiFePO4
-	case "lifepo4-12v":
-		return 4  // 12V = 4S LiFePO4  
-	case "lifepo4-24v":
-		return 8  // 24V = 8S LiFePO4
-	case "lead-acid-12v":
-		return 6  // 12V = 6S Lead-Acid
-	case "lead-acid-24v":
-		return 12 // 24V = 12S Lead-Acid
-	default:
-		return 0  // Unknown, let auto-detection handle it
-	}
-}
-
-
-// estimateCellCountFromVoltageRange estimates cell count from voltage range and chemistry
-func estimateCellCountFromVoltageRange(minV, maxV float32, chemistry string) int {
-	profile, exists := ChemistryProfiles[chemistry]
-	if !exists {
-		return 0
-	}
-	
-	// Use average voltage for estimation
-	avgVoltage := (minV + maxV) / 2
-	profileAvg := (profile.MinVoltage + profile.MaxVoltage) / 2
-	
-	cellCount := int(avgVoltage/profileAvg + 0.5) // Round to nearest integer
-	
-	// Validate reasonable range
-	if cellCount < 1 {
-		cellCount = 1
-	} else if cellCount > 24 {
-		cellCount = 24
-	}
-	
-	return cellCount
-}
-
-// estimateCellCountFromPackVoltage estimates cell count from total pack voltage range
-func estimateCellCountFromPackVoltage(minPackV, maxPackV float32) int {
-	// Use average pack voltage for estimation
-	avgPackV := (minPackV + maxPackV) / 2
-	
-	// Try common cell counts and chemistries to find best match
-	commonConfigs := []struct {
-		chemistry string
-		cellCount int
-		nominalV  float32
-	}{
-		{ChemistryLeadAcid, 6, 11.5},   // 12V lead-acid (average ~11.5V)
-		{ChemistryLeadAcid, 12, 23.0},  // 24V lead-acid
-		{ChemistryLiFePO4, 4, 12.8},    // 12V LiFePO4
-		{ChemistryLiFePO4, 8, 25.6},    // 24V LiFePO4
-		{ChemistryLiIon, 3, 11.1},      // 3S Li-Ion
-		{ChemistryLiIon, 4, 14.8},      // 4S Li-Ion
-		{ChemistryLiIon, 7, 25.9},      // 7S Li-Ion
-		{ChemistryLiIon, 8, 29.6},      // 8S Li-Ion
-		{ChemistryLiIon, 10, 37.0},     // 10S Li-Ion (lime)
-	}
-	
-	bestMatch := 0
-	bestDiff := float32(999.0)
-	
-	for _, config := range commonConfigs {
-		diff := float32(math.Abs(float64(avgPackV - config.nominalV)))
-		if diff < bestDiff {
-			bestDiff = diff
-			bestMatch = config.cellCount
-		}
-	}
-	
-	// Only return if the match is reasonable (within 20% of nominal)
-	if bestDiff < avgPackV*0.2 {
-		return bestMatch
-	}
-	
-	return 0
-}
