@@ -147,6 +147,9 @@ func (c *Config) Unmarshal(key string, raw interface{}) error {
 
 // Set can only update one section at a time.
 func (c *Config) Set(key string, value interface{}) error {
+	if err := allSections[key].validate(value); err != nil {
+		return err
+	}
 	if !checkIfSectionKey(key) {
 		return notSectionKeyError(key)
 	}

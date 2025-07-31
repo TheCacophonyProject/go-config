@@ -368,6 +368,23 @@ func TestSetField(t *testing.T) {
 	require.Equal(t, audioExpected, audio2)
 }
 
+func TestLocation(t *testing.T) {
+	defer newFs(t, "")()
+	conf, err := New(DefaultConfigDir)
+	require.NoError(t, err)
+
+	require.Error(t, conf.Set(LocationKey, Location{Latitude: 91, Longitude: 0}))
+	require.Error(t, conf.Set(LocationKey, Location{Latitude: -91, Longitude: 0}))
+	require.NoError(t, conf.Set(LocationKey, Location{Latitude: 90, Longitude: 0}))
+	require.NoError(t, conf.Set(LocationKey, Location{Latitude: -90, Longitude: 0}))
+
+	require.Error(t, conf.Set(LocationKey, Location{Latitude: 0, Longitude: -181}))
+	require.Error(t, conf.Set(LocationKey, Location{Latitude: 0, Longitude: 181}))
+	require.NoError(t, conf.Set(LocationKey, Location{Latitude: 0, Longitude: -180}))
+	require.NoError(t, conf.Set(LocationKey, Location{Latitude: 0, Longitude: 180}))
+
+}
+
 func checkWritingMap(
 	t *testing.T,
 	key string,
