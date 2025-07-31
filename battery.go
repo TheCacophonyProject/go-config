@@ -40,10 +40,10 @@ func init() {
 	}
 }
 
-func batteryValidateFunc(battery interface{}) error {
-	batteryStruct, ok := battery.(*Battery)
-	if !ok {
-		return fmt.Errorf("battery is not of type *Battery")
+func batteryValidateFunc(batteryInterface interface{}) error {
+	batteryStruct, err := ConvertToStruct[*Battery](batteryInterface)
+	if err != nil {
+		return err
 	}
 	if batteryStruct.PresetBatteryType != "" && batteryStruct.CustomBatteryType != nil {
 		return fmt.Errorf("cannot specify both battery-type-name and custom-battery-type")
