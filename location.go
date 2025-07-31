@@ -87,27 +87,17 @@ func mapToLocation(m map[string]interface{}) (interface{}, error) {
 }
 
 func validateLocation(locationInterface interface{}) error {
-	// Checking that it is of type Location or *Location
-	var location Location
-	switch v := locationInterface.(type) {
-	case Location:
-		location = v
-	case *Location:
-		if v != nil {
-			location = *v
-		} else {
-			return fmt.Errorf("location is a nil *Location")
-		}
-	default:
-		return fmt.Errorf("location is not of type Location or *Location")
+	location, err := ConvertToStruct[Location](locationInterface)
+	if err != nil {
+		return err
 	}
 
 	// Validating latitude and longitude
 	if location.Latitude < -90 || location.Latitude > 90 {
-		return fmt.Errorf("latitude must be between -90 and 90")
+		return fmt.Errorf("latitude must be between -90 and 90, got %v", location.Latitude)
 	}
 	if location.Longitude < -180 || location.Longitude > 180 {
-		return fmt.Errorf("longitude must be between -180 and 180")
+		return fmt.Errorf("longitude must be between -180 and 180, got %v", location.Longitude)
 	}
 	return nil
 }

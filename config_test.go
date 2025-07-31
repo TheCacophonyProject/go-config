@@ -262,11 +262,11 @@ func TestMapToLocation(t *testing.T) {
 
 	newNow()
 	locationMap := map[string]interface{}{
-		"latitude":  "123.321",
+		"latitude":  "27.123",
 		"timestamp": now().Format(TimeFormat),
 	}
 	locationExpected := Location{
-		Latitude:  123.321,
+		Latitude:  27.123,
 		Timestamp: now(),
 	}
 	var location Location
@@ -282,10 +282,10 @@ func TestNotWritingZeroValues(t *testing.T) {
 
 	newNow()
 	locationMap := map[string]interface{}{
-		"lAtitUde": "123.321",
+		"lAtitUde": "28.283",
 	}
 	locationMapExpected := map[string]interface{}{
-		"latitude": float32(123.321),
+		"latitude": float32(28.283),
 		"updated":  now(),
 	}
 	require.NoError(t, conf.SetFromMap(LocationKey, locationMap, false))
@@ -383,6 +383,18 @@ func TestLocation(t *testing.T) {
 	require.NoError(t, conf.Set(LocationKey, Location{Latitude: 0, Longitude: -180}))
 	require.NoError(t, conf.Set(LocationKey, Location{Latitude: 0, Longitude: 180}))
 
+	// Should fail as it has an invalid field.
+	require.Error(t, conf.Set(LocationKey, map[string]interface{}{
+		"latitude":  0,
+		"longitude": 0,
+		"not-a-key": "foo",
+	}))
+
+	require.NoError(t, conf.Set(LocationKey, map[string]interface{}{
+		"latitude":  0,
+		"longitude": 0,
+	}))
+
 }
 
 func checkWritingMap(
@@ -441,8 +453,9 @@ func randomDuration() string {
 
 func randomLocation() Location {
 	return Location{
-		Accuracy:  float32(randSrc.Int63()),
-		Longitude: float32(randSrc.Int63()),
+		Accuracy:  float32(rand.Float64()),
+		Longitude: float32(rand.Float64()*360 - 180),
+		Latitude:  float32(rand.Float64()*180 - 90),
 		Timestamp: now(),
 	}
 }

@@ -441,3 +441,39 @@ func copyAndInsensitiviseMap(m map[string]interface{}) map[string]interface{} {
 
 	return nm
 }
+
+// ConvertToStruct converts an interface{} to the target struct type T.
+// Can input the struct itself, a pointer to the struct, or a map[string]interface{}
+func ConvertToStruct[T any](input interface{}) (T, error) {
+	var out T
+	tType := reflect.TypeOf(out)
+
+	switch v := input.(type) {
+	case T:
+		out = v
+	case *T:
+		if v != nil {
+			out = *v
+		} else {
+			return out, fmt.Errorf("%s is a nil pointer", tType.Name())
+		}
+	case map[string]interface{}:
+		decoderConfig := mapstructure.DecoderConfig{
+			Result:           &out,
+			WeaklyTypedInput: true,
+			ErrorUnused:      true, // Will error if there is a key in the map that is not in the struct.
+		}
+		decoder, err := mapstructure.NewDecoder(&decoderConfig)
+		if err != nil {
+			return out, err
+		}
+
+		if err := decoder.Decode(v); err != nil {
+			return out, fmt.Errorf("failed to decode map to %s: %w", tType.Name(), err)
+		}
+	default:
+		return out, fmt.Errorf("input is not of type %s, *%s, or map[string]interface{}", tType.Name(), tType.Name())
+	}
+
+	return out, nil
+}
