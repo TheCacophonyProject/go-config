@@ -125,7 +125,7 @@ func (bp *BatteryPack) DetectCellCount(voltage float32) int {
 	nominalVoltage := (bp.Type.MinVoltage + bp.Type.MaxVoltage) / 2
 	estimatedCells := int(voltage/nominalVoltage + 0.5) // Round to nearest integer
 	
-	// Validate reasonable cell count (1-24 cells)
+	// Validate reasonable cell count
 	if estimatedCells < 1 {
 		estimatedCells = 1
 	}
@@ -229,32 +229,33 @@ var ChemistryProfiles = map[string]BatteryType{
 // Single-cell chemistry profiles 
 var LiFePO4Chemistry = BatteryType{
 	Chemistry:      ChemistryLiFePO4,
-	MinVoltage:     2.5,  // Per-cell minimum
-	MaxVoltage:     3.4, // Per-cell maximum (expanded to handle 6.92V ÷ 2 = 3.46V)
+	MinVoltage:     2.5,
+	MaxVoltage:     3.4,
 	Voltages:       []float32{2.5, 3.0, 3.2, 3.22, 3.25, 3.26, 3.27, 3.3, 3.32, 3.35,3.4},
 	Percent:        []float32{0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100},
 }
 
+// Based on NMC 18650 cells
 var LiIonChemistry = BatteryType{
 	Chemistry:      ChemistryLiIon,
-	MinVoltage:     2.5,  // Per-cell minimum 
-	MaxVoltage:     3.4, // Per-cell maximum (typical Li-ion range)
-	Voltages:       []float32{2.5, 3.0, 3.2, 3.22, 3.25, 3.26, 3.27, 3.3, 3.32, 3.35, 3.4},
+	MinVoltage:     3.2,
+	MaxVoltage:     4.2,
+	Voltages:       []float32{2.5, 3.0, 3.2, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0, 4.2},
 	Percent:        []float32{0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100},
 }
 
 var LeadAcidChemistry = BatteryType{
 	Chemistry:      ChemistryLeadAcid,
-	MinVoltage:     1.94,  // Per-cell minimum
-	MaxVoltage:     2.15,  // Per-cell maximum
+	MinVoltage:     1.94,
+	MaxVoltage:     2.15,
 	Voltages:       []float32{1.94, 1.95, 1.97, 1.99, 2.02, 2.04, 2.07, 2.09, 2.11, 2.13, 2.15},
 	Percent:        []float32{0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100},
 }
 
 var LiPoChemistry = BatteryType{
 	Chemistry:      ChemistryLiPo,
-	MinVoltage:     3.27,  // Per-cell minimum
-	MaxVoltage:     4.2, // Per-cell maximum
+	MinVoltage:     3.27,
+	MaxVoltage:     4.2,
 	Voltages:       []float32{3.27, 3.69, 3.73, 3.77, 3.8, 3.84, 3.87, 3.95, 4.02, 4.11, 4.2},
 	Percent:        []float32{0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100},
 }

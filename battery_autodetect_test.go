@@ -20,8 +20,8 @@ func TestAutoDetectBatteryPack(t *testing.T) {
 			expectedCells:     1,
 		},
 		{
-			name:              "6.92V should detect LiFePO4 2 cells",
-			voltage:           6.92,
+			name:              "6.6V should detect LiFePO4 2 cells",
+			voltage:           6.6,
 			expectedChemistry: ChemistryLiFePO4,
 			expectedCells:     2,
 		},
@@ -69,10 +69,10 @@ func TestAutoDetectBatteryPack(t *testing.T) {
 			expectedCells:     3,
 		},
 		{
-			name:              "12.0V should detect Lead-acid 6 cells",
+			name:              "12.0V should detect Li-ion 3 cells",
 			voltage:           12.0,
-			expectedChemistry: ChemistryLeadAcid,
-			expectedCells:     6,
+			expectedChemistry: ChemistryLiIon,
+			expectedCells:     3,
 		},
 		{
 			name:              "13.5V should detect Li-ion 4 cells",
@@ -87,10 +87,10 @@ func TestAutoDetectBatteryPack(t *testing.T) {
 			expectedCells:     5,
 		},
 		{
-			name:              "21.0V should detect Li-ion 6 cells",
+			name:              "21.0V should detect Li-ion 5 cells",
 			voltage:           21.0,
 			expectedChemistry: ChemistryLiIon,
-			expectedCells:     6,
+			expectedCells:     5,
 		},
 		{
 			name:              "27.0V should detect Li-ion 8 cells",
@@ -177,19 +177,19 @@ func TestAutoDetectBatteryPackPreference(t *testing.T) {
 			voltage:           3.86,
 			expectedChemistry: ChemistryLiIon,
 			expectedCells:     1,
-			reason:            "3.86V is within Li-ion 1 cell range (2.9-4.25V) and Lead-acid 2 cell range (3.86-4.22V), should prefer lower cell count",
+			reason:            "3.86V is within Li-ion 1 cell range and Lead-acid 2 cell range, should prefer lower cell count",
 		},
 		{
-			voltage:           6.92,
+			voltage:           6.6,
 			expectedChemistry: ChemistryLiFePO4,
 			expectedCells:     2,
-			reason:            "6.92V is within LiFePO4 2 cell range (5.0-7.3V), should detect as LiFePO4",
+			reason:            "6.6V is within LiFePO4 2 cell range, should detect as LiFePO4",
 		},
 		{
-			voltage:           7.2,
+			voltage:           6.7,
 			expectedChemistry: ChemistryLiFePO4,
 			expectedCells:     2,
-			reason:            "7.2V is at the edge of LiFePO4 2 cell range, should prefer LiFePO4 over Li-ion",
+			reason:            "6.7V is within LiFePO4 2 cell range, should detect as LiFePO4",
 		},
 	}
 

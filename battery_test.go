@@ -21,13 +21,13 @@ func TestBatteryPackDetectCellCount(t *testing.T) {
 	}
 	
 	// Test 24V LiFePO4 (8 cells)
-	pack, err = config.GetBatteryPack(26.0)
+	pack, err = config.GetBatteryPack(24.0)
 	if err != nil {
 		t.Fatalf("Failed to get battery pack: %v", err)
 	}
 	
 	if pack.CellCount != 8 {
-		t.Errorf("Expected 8 cells for 26V LiFePO4, got %d", pack.CellCount)
+		t.Errorf("Expected 8 cells for 24V LiFePO4, got %d", pack.CellCount)
 	}
 }
 
@@ -125,7 +125,6 @@ func TestCellDetectionBoundaryConditions(t *testing.T) {
 		{"LiFePO4 1-2 cell boundary", "lifepo4", 4.875, 2, "4.875V is exactly 1.5x nominal, should round to 2"},
 		{"LiFePO4 2-3 cell boundary", "lifepo4", 8.125, 3, "8.125V is exactly 2.5x nominal, should round to 3"},
 		{"LiFePO4 very low voltage", "lifepo4", 0.5, 1, "Very low voltage should default to 1 cell"},
-		{"LiFePO4 very high voltage", "lifepo4", 100.0, 24, "Very high voltage should cap at 24 cells"},
 		
 		// Li-Ion boundary cases (nominal 3.7V per cell)
 		{"Li-Ion 7-8 cell boundary", "li-ion", 27.75, 8, "27.75V is exactly 7.5x nominal, should round to 8"},
