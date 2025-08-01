@@ -496,9 +496,9 @@ func fallbackDetection(voltage float32) (*BatteryPack, error) {
 
 // batteryValidateFunc validates battery configuration
 func batteryValidateFunc(battery any) error {
-	b, ok := battery.(Battery)
-	if !ok {
-		return fmt.Errorf("invalid battery configuration type")
+	b, err := ConvertToStruct[Battery](battery)
+	if err != nil {
+		return err
 	}
 
 	// Validate chemistry if specified
@@ -519,9 +519,9 @@ func batteryValidateFunc(battery any) error {
 		return fmt.Errorf("minimum voltage detection must be >= 0")
 	}
 
-	// Validate depletion estimation settings
-	if b.DepletionHistoryHours < 1 || b.DepletionHistoryHours > 168 { // 1 hour to 1 week
-		return fmt.Errorf("depletion history hours must be between 1 and 168")
+	// Validate depletion estimation settings (0 means disabled/not configured)
+	if b.DepletionHistoryHours != 0 && (b.DepletionHistoryHours < 1 || b.DepletionHistoryHours > 168) { // 1 hour to 1 week
+		return fmt.Errorf("depletion history hours must be between 1 and 168 (or 0 to disable)")
 	}
 
 	if b.DepletionWarningHours < 0 || b.DepletionWarningHours > 720 { // 0 to 30 days

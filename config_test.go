@@ -313,8 +313,8 @@ func TestMapToBattery(t *testing.T) {
 	defer newFs(t, "")()
 	conf, err := New(DefaultConfigDir)
 	require.NoError(t, err)
-	batteryMap := map[string]any{"enable-voltage-readings": "true"}
-	batteryExpected := Battery{EnableVoltageReadings: true}
+	batteryMap := map[string]any{"enable-voltage-readings": "false"}
+	batteryExpected := Battery{EnableVoltageReadings: false}
 	checkWritingMap(t, BatteryKey, &Battery{}, &batteryExpected, batteryMap, conf)
 }
 
