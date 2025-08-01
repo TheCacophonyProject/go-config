@@ -17,6 +17,7 @@
 package config
 
 import (
+	"fmt"
 	"reflect"
 	"time"
 
@@ -85,7 +86,18 @@ func mapToLocation(m map[string]interface{}) (interface{}, error) {
 	return l, nil
 }
 
-// TODO
-func validateLocation(l interface{}) error {
+func validateLocation(locationInterface interface{}) error {
+	location, err := ConvertToStruct[Location](locationInterface)
+	if err != nil {
+		return err
+	}
+
+	// Validating latitude and longitude
+	if location.Latitude < -90 || location.Latitude > 90 {
+		return fmt.Errorf("latitude must be between -90 and 90, got %v", location.Latitude)
+	}
+	if location.Longitude < -180 || location.Longitude > 180 {
+		return fmt.Errorf("longitude must be between -180 and 180, got %v", location.Longitude)
+	}
 	return nil
 }
