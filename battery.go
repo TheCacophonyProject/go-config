@@ -52,25 +52,25 @@ func init() {
 
 // Battery represents the main battery configuration
 type Battery struct {
-	EnableVoltageReadings       bool    `mapstructure:"enable-voltage-readings"`
-	Chemistry                   string  `mapstructure:"chemistry"`
-	ManualCellCount             int     `mapstructure:"manual-cell-count"`
-	ManuallyConfigured          bool    `mapstructure:"manually-configured"`
-	MinimumVoltageDetection     float32 `mapstructure:"minimum-voltage-detection"`
-	EnableDepletionEstimate     bool    `mapstructure:"enable-depletion-estimate"`
-	DepletionHistoryHours       int     `mapstructure:"depletion-history-hours"`
-	DepletionWarningHours       float32 `mapstructure:"depletion-warning-hours"`
-	Updated                     any `mapstructure:"updated,omitempty"` // Standard config timestamp
+	EnableVoltageReadings   bool    `mapstructure:"enable-voltage-readings"`
+	Chemistry               string  `mapstructure:"chemistry"`
+	ManualCellCount         int     `mapstructure:"manual-cell-count"`
+	ManuallyConfigured      bool    `mapstructure:"manually-configured"`
+	MinimumVoltageDetection float32 `mapstructure:"minimum-voltage-detection"`
+	EnableDepletionEstimate bool    `mapstructure:"enable-depletion-estimate"`
+	DepletionHistoryHours   int     `mapstructure:"depletion-history-hours"`
+	DepletionWarningHours   float32 `mapstructure:"depletion-warning-hours"`
+	Updated                 any     `mapstructure:"updated,omitempty"` // Standard config timestamp
 }
 
 // DefaultBattery returns default battery configuration
 func DefaultBattery() Battery {
 	return Battery{
-		EnableVoltageReadings:     true,
-		MinimumVoltageDetection:   1.0,
-		EnableDepletionEstimate:   true,
-		DepletionHistoryHours:     48,
-		DepletionWarningHours:     12.0,
+		EnableVoltageReadings:   true,
+		MinimumVoltageDetection: 1.0,
+		EnableDepletionEstimate: true,
+		DepletionHistoryHours:   48,
+		DepletionWarningHours:   12.0,
 	}
 }
 
@@ -80,7 +80,7 @@ func (b *Battery) NewBatteryPack(chemistry string, cellCount int) (*BatteryPack,
 	if !exists {
 		return nil, fmt.Errorf("unknown chemistry: %s", chemistry)
 	}
-	
+
 	return &BatteryPack{
 		Type:      &batteryType,
 		CellCount: cellCount,
@@ -93,16 +93,16 @@ func (b *Battery) DetectCellCount(chemistry string, voltage float32) int {
 	if !exists {
 		return 0
 	}
-	
+
 	pack := &BatteryPack{Type: &batteryType}
 	return pack.DetectCellCount(voltage)
 }
 
 // BatteryType defines a single-cell battery chemistry characteristics
 type BatteryType struct {
-	Chemistry       string  `mapstructure:"chemistry"`
-	MinVoltage      float32 `mapstructure:"min-voltage"`     // Per-cell minimum voltage
-	MaxVoltage      float32 `mapstructure:"max-voltage"`     // Per-cell maximum voltage
+	Chemistry  string  `mapstructure:"chemistry"`
+	MinVoltage float32 `mapstructure:"min-voltage"` // Per-cell minimum voltage
+	MaxVoltage float32 `mapstructure:"max-voltage"` // Per-cell maximum voltage
 
 	// Single-cell discharge curve
 	Voltages []float32 `mapstructure:"voltages"`
@@ -120,16 +120,16 @@ func (bp *BatteryPack) DetectCellCount(voltage float32) int {
 	if bp.Type == nil {
 		return 0
 	}
-	
+
 	// Use nominal voltage if specified, otherwise fall back to average of min and max
 	nominalVoltage := (bp.Type.MinVoltage + bp.Type.MaxVoltage) / 2
 	estimatedCells := int(voltage/nominalVoltage + 0.5) // Round to nearest integer
-	
+
 	// Validate reasonable cell count
 	if estimatedCells < 1 {
 		estimatedCells = 1
 	}
-	
+
 	return estimatedCells
 }
 
@@ -154,23 +154,23 @@ func (bp *BatteryPack) VoltageToPercent(voltage float32) (float32, error) {
 	if bp.Type == nil {
 		return -1, fmt.Errorf("no battery type defined")
 	}
-	
+
 	if bp.CellCount <= 0 {
 		return -1, fmt.Errorf("invalid cell count: %d", bp.CellCount)
 	}
-	
+
 	// Convert pack voltage to per-cell voltage
 	cellVoltage := voltage / float32(bp.CellCount)
-	
+
 	// Use original single-cell curve for calculation
 	voltages := bp.Type.Voltages
 	percents := bp.Type.Percent
-	
+
 	// Validate curves
 	if len(voltages) != len(percents) || len(voltages) == 0 {
 		return -1, fmt.Errorf("invalid voltage/percent curves for %s", bp.Type.Chemistry)
 	}
-	
+
 	// Handle boundary conditions
 	if cellVoltage <= voltages[0] {
 		return percents[0], nil
@@ -178,7 +178,7 @@ func (bp *BatteryPack) VoltageToPercent(voltage float32) (float32, error) {
 	if cellVoltage >= voltages[len(voltages)-1] {
 		return percents[len(percents)-1], nil
 	}
-	
+
 	// Binary search for interpolation interval
 	left, right := 0, len(voltages)-1
 	for left < right-1 {
@@ -189,24 +189,24 @@ func (bp *BatteryPack) VoltageToPercent(voltage float32) (float32, error) {
 			left = mid
 		}
 	}
-	
+
 	// Linear interpolation
 	v1, v2 := voltages[left], voltages[right]
 	p1, p2 := percents[left], percents[right]
-	
+
 	if v2 == v1 {
 		return p1, nil // Avoid division by zero
 	}
-	
+
 	percent := p1 + (p2-p1)*(cellVoltage-v1)/(v2-v1)
-	
+
 	// Ensure result is within bounds
 	if percent < 0 {
 		percent = 0
 	} else if percent > 100 {
 		percent = 100
 	}
-	
+
 	return percent, nil
 }
 
@@ -226,38 +226,38 @@ var ChemistryProfiles = map[string]BatteryType{
 	ChemistryLiPo:     LiPoChemistry,
 }
 
-// Single-cell chemistry profiles 
+// Single-cell chemistry profiles
 var LiFePO4Chemistry = BatteryType{
-	Chemistry:      ChemistryLiFePO4,
-	MinVoltage:     2.5,
-	MaxVoltage:     3.4,
-	Voltages:       []float32{2.5, 3.0, 3.2, 3.22, 3.25, 3.26, 3.27, 3.3, 3.32, 3.35,3.4},
-	Percent:        []float32{0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100},
+	Chemistry:  ChemistryLiFePO4,
+	MinVoltage: 2.5,
+	MaxVoltage: 3.4,
+	Voltages:   []float32{2.5, 3.0, 3.2, 3.22, 3.25, 3.26, 3.27, 3.3, 3.32, 3.35, 3.4},
+	Percent:    []float32{0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100},
 }
 
-// Based on NMC 18650 cells
+// Based on NMC cells
 var LiIonChemistry = BatteryType{
-	Chemistry:      ChemistryLiIon,
-	MinVoltage:     3.2,
-	MaxVoltage:     4.2,
-	Voltages:       []float32{2.5, 3.0, 3.2, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0, 4.2},
-	Percent:        []float32{0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100},
+	Chemistry:  ChemistryLiIon,
+	MinVoltage: 3.2,
+	MaxVoltage: 4.2,
+	Voltages:   []float32{2.5, 3.0, 3.2, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0, 4.2},
+	Percent:    []float32{0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100},
 }
 
 var LeadAcidChemistry = BatteryType{
-	Chemistry:      ChemistryLeadAcid,
-	MinVoltage:     1.94,
-	MaxVoltage:     2.15,
-	Voltages:       []float32{1.94, 1.95, 1.97, 1.99, 2.02, 2.04, 2.07, 2.09, 2.11, 2.13, 2.15},
-	Percent:        []float32{0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100},
+	Chemistry:  ChemistryLeadAcid,
+	MinVoltage: 1.94,
+	MaxVoltage: 2.15,
+	Voltages:   []float32{1.94, 1.95, 1.97, 1.99, 2.02, 2.04, 2.07, 2.09, 2.11, 2.13, 2.15},
+	Percent:    []float32{0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100},
 }
 
 var LiPoChemistry = BatteryType{
-	Chemistry:      ChemistryLiPo,
-	MinVoltage:     3.27,
-	MaxVoltage:     4.2,
-	Voltages:       []float32{3.27, 3.69, 3.73, 3.77, 3.8, 3.84, 3.87, 3.95, 4.02, 4.11, 4.2},
-	Percent:        []float32{0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100},
+	Chemistry:  ChemistryLiPo,
+	MinVoltage: 3.27,
+	MaxVoltage: 4.2,
+	Voltages:   []float32{3.27, 3.69, 3.73, 3.77, 3.8, 3.84, 3.87, 3.95, 4.02, 4.11, 4.2},
+	Percent:    []float32{0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100},
 }
 
 // GetBatteryPack creates a BatteryPack from config and voltage reading
@@ -265,23 +265,23 @@ func (b *Battery) GetBatteryPack(voltage float32) (*BatteryPack, error) {
 	if b.Chemistry == "" {
 		return nil, fmt.Errorf("no battery chemistry specified")
 	}
-	
+
 	chemistryProfile, exists := ChemistryProfiles[b.Chemistry]
 	if !exists {
 		return nil, fmt.Errorf("unknown battery chemistry: %s", b.Chemistry)
 	}
-	
+
 	pack := &BatteryPack{
 		Type: &chemistryProfile,
 	}
-	
+
 	// Use manual cell count if configured, otherwise detect from voltage
 	if b.ManualCellCount > 0 {
 		pack.CellCount = b.ManualCellCount
 	} else if voltage > 0 {
 		pack.CellCount = pack.DetectCellCount(voltage)
 	}
-	
+
 	return pack, nil
 }
 
@@ -290,15 +290,14 @@ func (b *Battery) GetChemistryProfile() (*BatteryType, error) {
 	if b.Chemistry == "" {
 		return nil, fmt.Errorf("no battery chemistry specified")
 	}
-	
+
 	chemistryProfile, exists := ChemistryProfiles[b.Chemistry]
 	if !exists {
 		return nil, fmt.Errorf("unknown battery chemistry: %s", b.Chemistry)
 	}
-	
+
 	return &chemistryProfile, nil
 }
-
 
 // GetBatteryType returns the configured battery chemistry profile
 // Deprecated: Use GetChemistryProfile or GetBatteryPack instead
@@ -321,7 +320,7 @@ func (b *Battery) SetManualChemistry(chemistry string) error {
 	if _, exists := ChemistryProfiles[chemistry]; !exists {
 		return fmt.Errorf("unknown battery chemistry: %s", chemistry)
 	}
-	
+
 	b.Chemistry = chemistry
 	b.ManuallyConfigured = true
 	return nil
@@ -336,7 +335,7 @@ func (b *Battery) SetManualConfiguration(chemistry string, cellCount int) error 
 		}
 		b.Chemistry = chemistry
 	}
-	
+
 	// Validate and set cell count
 	if cellCount > 0 {
 		if cellCount < 1 || cellCount > 24 {
@@ -347,7 +346,7 @@ func (b *Battery) SetManualConfiguration(chemistry string, cellCount int) error 
 		// Explicitly set to 0 for auto-detection
 		b.ManualCellCount = 0
 	}
-	
+
 	b.ManuallyConfigured = true
 	return nil
 }
@@ -379,12 +378,12 @@ func AutoDetectBatteryPack(voltage float32) (*BatteryPack, error) {
 	if voltage <= 0 {
 		return nil, fmt.Errorf("invalid voltage for detection: %.2fV", voltage)
 	}
-	
+
 	// First priority: Check against the authoritative voltage table
 	if pack := checkVoltageTable(voltage); pack != nil {
 		return pack, nil
 	}
-	
+
 	// Second priority: Fall back to range matching with lower cell count preference
 	return fallbackDetection(voltage)
 }
@@ -396,24 +395,24 @@ func checkVoltageTable(voltage float32) *BatteryPack {
 		chemistry string
 		cells     int
 	}
-	
+
 	voltageTable := []tableEntry{
-		{ChemistryLeadAcid, 1},
-		{ChemistryLiFePO4, 1},
-		{ChemistryLiIon, 1},
-		{ChemistryLiFePO4, 2},
-		{ChemistryLiIon, 2},
-		{ChemistryLiFePO4, 3},
-		{ChemistryLiIon, 3},
-		{ChemistryLeadAcid,6},
+		{ChemistryLeadAcid, 1}, // 1. 94V - 2.15V per cell
+		{ChemistryLiIon, 1},    // 3.2V - 4.2V per cell (These are the one's we sell)
+		{ChemistryLiFePO4, 1},  // 2.5V - 3.4V per cell
+		{ChemistryLiFePO4, 2},  // 5.0V - 6.8V per pack
+		{ChemistryLiIon, 2},    // 6.4V - 8.4V per pack
+		{ChemistryLiFePO4, 3},  // 7.5V - 10.2V per pack
+		{ChemistryLeadAcid, 6}, // 11.64V - 12.9V per pack
+		{ChemistryLiIon, 3},    // 9.6V - 12.6V per pack
 		{ChemistryLiIon, 4},
-		{ChemistryLiIon,5},
-		{ChemistryLiIon,6},
-		{ChemistryLiIon,8},
-		{ChemistryLiIon,10},
-		{ChemistryLiIon,12},
+		{ChemistryLiIon, 5},
+		{ChemistryLiIon, 6},
+		{ChemistryLiIon, 8},
+		{ChemistryLiIon, 10},
+		{ChemistryLiIon, 12},
 	}
-	
+
 	// Check if voltage falls into any table range
 	// For overlapping ranges, the first match in the table wins (table is ordered by preference)
 	for _, entry := range voltageTable {
@@ -430,7 +429,7 @@ func checkVoltageTable(voltage float32) *BatteryPack {
 			}
 		}
 	}
-	
+
 	return nil // No table match found
 }
 
@@ -442,18 +441,18 @@ func fallbackDetection(voltage float32) (*BatteryPack, error) {
 		chemistry string
 		cells     int
 	}
-	
+
 	// Build ranges from chemistry profiles, iterating from 1 to 10 cells
 	var ranges []voltageRange
 	maxCells := 10
-	
+
 	// Iterate through cell counts from 1 to maxCells
 	for cells := 1; cells <= maxCells; cells++ {
 		// Check each chemistry for this cell count
 		for chemName, chem := range ChemistryProfiles {
 			minV := chem.MinVoltage * float32(cells)
 			maxV := chem.MaxVoltage * float32(cells)
-			
+
 			ranges = append(ranges, voltageRange{
 				min:       minV,
 				max:       maxV,
@@ -462,7 +461,7 @@ func fallbackDetection(voltage float32) (*BatteryPack, error) {
 			})
 		}
 	}
-	
+
 	// Find all matching ranges for the given voltage
 	var matches []voltageRange
 	for _, r := range ranges {
@@ -470,11 +469,11 @@ func fallbackDetection(voltage float32) (*BatteryPack, error) {
 			matches = append(matches, r)
 		}
 	}
-	
+
 	if len(matches) == 0 {
 		return nil, fmt.Errorf("no battery chemistry matches voltage %.2fV", voltage)
 	}
-	
+
 	// Prefer lower cell count as tiebreaker
 	bestMatch := matches[0]
 	for _, match := range matches {
@@ -482,12 +481,12 @@ func fallbackDetection(voltage float32) (*BatteryPack, error) {
 			bestMatch = match
 		}
 	}
-	
+
 	chemProfile, exists := ChemistryProfiles[bestMatch.chemistry]
 	if !exists {
 		return nil, fmt.Errorf("chemistry profile not found: %s", bestMatch.chemistry)
 	}
-	
+
 	return &BatteryPack{
 		Type:      &chemProfile,
 		CellCount: bestMatch.cells,
@@ -531,7 +530,6 @@ func batteryValidateFunc(battery any) error {
 	return nil
 }
 
-
 // batteryMapToStruct converts map to Battery struct
 func batteryMapToStruct(m map[string]any) (any, error) {
 	var s Battery
@@ -540,4 +538,3 @@ func batteryMapToStruct(m map[string]any) (any, error) {
 	}
 	return s, nil
 }
-

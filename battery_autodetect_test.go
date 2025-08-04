@@ -14,7 +14,13 @@ func TestAutoDetectBatteryPack(t *testing.T) {
 	}{
 		// Test cases from the requirements
 		{
-			name:              "3.86V should detect Li-ion 1 cell, not Lead-acid 2 cells",
+			name:              "3.29V should detect Li-ion 1 cell",
+			voltage:           3.29,
+			expectedChemistry: ChemistryLiIon,
+			expectedCells:     1,
+		},
+		{
+			name:              "3.86V should detect Li-ion 1 cell",
 			voltage:           3.86,
 			expectedChemistry: ChemistryLiIon,
 			expectedCells:     1,
@@ -69,10 +75,10 @@ func TestAutoDetectBatteryPack(t *testing.T) {
 			expectedCells:     3,
 		},
 		{
-			name:              "12.0V should detect Li-ion 3 cells",
+			name:              "12.0V should detect Lead-acid 3 cells",
 			voltage:           12.0,
-			expectedChemistry: ChemistryLiIon,
-			expectedCells:     3,
+			expectedChemistry: ChemistryLeadAcid,
+			expectedCells:     6,
 		},
 		{
 			name:              "13.5V should detect Li-ion 4 cells",
@@ -125,39 +131,39 @@ func TestAutoDetectBatteryPack(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			pack, err := AutoDetectBatteryPack(tc.voltage)
-			
+
 			if tc.expectError {
 				if err == nil {
 					t.Errorf("Expected error for voltage %.2fV, but got none", tc.voltage)
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("Unexpected error for voltage %.2fV: %v", tc.voltage, err)
 				return
 			}
-			
+
 			if pack == nil {
 				t.Errorf("Expected battery pack for voltage %.2fV, but got nil", tc.voltage)
 				return
 			}
-			
+
 			if pack.Type.Chemistry != tc.expectedChemistry {
-				t.Errorf("For voltage %.2fV: expected chemistry %s, got %s", 
+				t.Errorf("For voltage %.2fV: expected chemistry %s, got %s",
 					tc.voltage, tc.expectedChemistry, pack.Type.Chemistry)
 			}
-			
+
 			if pack.CellCount != tc.expectedCells {
-				t.Errorf("For voltage %.2fV: expected %d cells, got %d cells", 
+				t.Errorf("For voltage %.2fV: expected %d cells, got %d cells",
 					tc.voltage, tc.expectedCells, pack.CellCount)
 			}
-			
+
 			// Verify voltage is within expected range
 			minV := pack.GetScaledMinVoltage()
 			maxV := pack.GetScaledMaxVoltage()
 			if tc.voltage < minV || tc.voltage > maxV {
-				t.Errorf("Voltage %.2fV is outside detected pack range [%.2f-%.2f]", 
+				t.Errorf("Voltage %.2fV is outside detected pack range [%.2f-%.2f]",
 					tc.voltage, minV, maxV)
 			}
 		})
@@ -199,14 +205,15 @@ func TestAutoDetectBatteryPackPreference(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
-			
+
 			if pack.Type.Chemistry != tc.expectedChemistry {
 				t.Errorf("Expected chemistry %s, got %s", tc.expectedChemistry, pack.Type.Chemistry)
 			}
-			
+
 			if pack.CellCount != tc.expectedCells {
 				t.Errorf("Expected %d cells, got %d cells", tc.expectedCells, pack.CellCount)
 			}
 		})
 	}
 }
+
