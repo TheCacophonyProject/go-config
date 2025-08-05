@@ -52,12 +52,10 @@ func init() {
 
 // Battery represents the main battery configuration
 type Battery struct {
-	EnableVoltageReadings   bool    `mapstructure:"enable-voltage-readings"`
 	Chemistry               string  `mapstructure:"chemistry"`
 	ManualCellCount         int     `mapstructure:"manual-cell-count"`
 	ManuallyConfigured      bool    `mapstructure:"manually-configured"`
 	MinimumVoltageDetection float32 `mapstructure:"minimum-voltage-detection"`
-	EnableDepletionEstimate bool    `mapstructure:"enable-depletion-estimate"`
 	DepletionHistoryHours   int     `mapstructure:"depletion-history-hours"`
 	DepletionWarningHours   float32 `mapstructure:"depletion-warning-hours"`
 	Updated                 any     `mapstructure:"updated,omitempty"` // Standard config timestamp
@@ -66,9 +64,7 @@ type Battery struct {
 // DefaultBattery returns default battery configuration
 func DefaultBattery() Battery {
 	return Battery{
-		EnableVoltageReadings:   true,
 		MinimumVoltageDetection: 1.0,
-		EnableDepletionEstimate: true,
 		DepletionHistoryHours:   48,
 		DepletionWarningHours:   12.0,
 	}

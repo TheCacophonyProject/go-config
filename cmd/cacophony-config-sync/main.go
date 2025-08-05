@@ -162,6 +162,29 @@ var ConfigSections = Sections{
 			},
 		},
 	},
+	{
+		Name:   "battery",
+		Key:    config.BatteryKey,
+		Config: &config.Battery{},
+		Mappings: []Mapping{
+			{
+				APIKey:    "chemistry",
+				ConfigKey: "Chemistry",
+				MapKey:    "chemistry",
+			},
+			{
+				APIKey:    "manualCellCount",
+				ConfigKey: "ManualCellCount",
+				MapKey:    "manual-cell-count",
+			},
+			{
+				APIKey:    "updated",
+				ConfigKey: "Updated",
+				MapKey:    "updated",
+				Converter: stringToTimeConverter,
+			},
+		},
+	},
 }
 
 type CacophonyAPIInterface interface {

@@ -313,8 +313,8 @@ func TestMapToBattery(t *testing.T) {
 	defer newFs(t, "")()
 	conf, err := New(DefaultConfigDir)
 	require.NoError(t, err)
-	batteryMap := map[string]any{"enable-voltage-readings": "false"}
-	batteryExpected := Battery{EnableVoltageReadings: false}
+	batteryMap := map[string]any{"chemistry": "lipo"}
+	batteryExpected := Battery{Chemistry: ChemistryLiPo}
 	checkWritingMap(t, BatteryKey, &Battery{}, &batteryExpected, batteryMap, conf)
 }
 
@@ -406,17 +406,15 @@ func checkWritingMap(
 ) {
 	require.NoError(t, conf.SetFromMap(key, m, false))
 	require.NoError(t, conf.Unmarshal(key, s))
-	
+
 	// Special handling for Battery type - ignore Updated field
 	if battery, ok := s.(*Battery); ok {
 		expectedBattery := expected.(*Battery)
 		// Compare all fields except Updated
-		require.Equal(t, expectedBattery.EnableVoltageReadings, battery.EnableVoltageReadings)
 		require.Equal(t, expectedBattery.Chemistry, battery.Chemistry)
 		require.Equal(t, expectedBattery.ManualCellCount, battery.ManualCellCount)
 		require.Equal(t, expectedBattery.ManuallyConfigured, battery.ManuallyConfigured)
 		require.Equal(t, expectedBattery.MinimumVoltageDetection, battery.MinimumVoltageDetection)
-		require.Equal(t, expectedBattery.EnableDepletionEstimate, battery.EnableDepletionEstimate)
 		require.Equal(t, expectedBattery.DepletionHistoryHours, battery.DepletionHistoryHours)
 		require.Equal(t, expectedBattery.DepletionWarningHours, battery.DepletionWarningHours)
 		// Updated field is set automatically - just verify it's not nil
