@@ -75,10 +75,10 @@ func TestAutoDetectBatteryPack(t *testing.T) {
 			expectedCells:     3,
 		},
 		{
-			name:              "12.0V should detect Lead-acid 3 cells",
+			name:              "12.0V should detect Li-ion 4 cells",
 			voltage:           12.0,
-			expectedChemistry: ChemistryLeadAcid,
-			expectedCells:     6,
+			expectedChemistry: ChemistryLiIon,
+			expectedCells:     3,
 		},
 		{
 			name:              "13.5V should detect Li-ion 4 cells",
@@ -216,4 +216,3 @@ func TestAutoDetectBatteryPackPreference(t *testing.T) {
 		})
 	}
 }
-

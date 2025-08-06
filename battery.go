@@ -399,7 +399,6 @@ func checkVoltageTable(voltage float32) *BatteryPack {
 		{ChemistryLiFePO4, 2},  // 5.0V - 6.8V per pack
 		{ChemistryLiIon, 2},    // 6.4V - 8.4V per pack
 		{ChemistryLiFePO4, 3},  // 7.5V - 10.2V per pack
-		{ChemistryLeadAcid, 6}, // 11.64V - 12.9V per pack
 		{ChemistryLiIon, 3},    // 9.6V - 12.6V per pack
 		{ChemistryLiIon, 4},
 		{ChemistryLiIon, 5},
