@@ -463,7 +463,7 @@ func procArgs() Args {
 func main() {
 	log.Println("Starting Cacophony Config Sync Service")
 	if err := runMain(); err != nil {
-		log.Printf("Service encountered an error: %v", err)
+		log.Fatal(err)
 	}
 }
 
