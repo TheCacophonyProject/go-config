@@ -9,18 +9,6 @@ release:
   name_template: "{{.Tag}}"
 
 builds:
-  - id: cacophony-config-import
-    goos:
-      - linux
-    goarch:
-      - arm
-      - arm64
-    goarm:
-      - "7"
-    main: ./cmd/cacophony-config-import
-    ldflags: -s -w -X main.version={{.Version}}
-    binary: cacophony-config-import
-
   - id: cacophony-config
     goos:
       - linux
