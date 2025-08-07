@@ -20,7 +20,6 @@ require (
 	github.com/wawandco/fako v0.0.0-20180828010250-c36a0bc97398
 	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
 	golang.org/x/text v0.3.7 // indirect
-	gopkg.in/yaml.v1 v1.0.0-20140924161607-9f9df34309c0
 )
 
 require (
