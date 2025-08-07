@@ -24,6 +24,7 @@ import (
 	"path"
 	"reflect"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/TheCacophonyProject/event-reporter/v3/eventclient"
@@ -44,7 +45,7 @@ type Config struct {
 	v         *viper.Viper
 	fileLock  *flock.Flock
 	AutoWrite bool
-	// accessedSections map[string]struct{} //TODO record each section accessed for restarting service purpose
+	mu        sync.Mutex
 }
 
 const (
@@ -105,13 +106,16 @@ func GetAllSections() map[string]interface{} {
 }
 
 func (c *Config) GetAllValues() (map[string]interface{}, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	configValues := GetAllSections()
 
 	for section, sectionStruct := range configValues {
 		if sectionStruct == nil {
 			continue
 		}
-		err := c.Unmarshal(section, sectionStruct)
+		err := c.unmarshal(section, sectionStruct)
 		if err != nil {
 			return nil, err
 		}
@@ -131,56 +135,76 @@ func New(dir string) (*Config, error) {
 	}
 	c.v.SetFs(fs)
 	c.v.SetConfigFile(configFile)
-	if err := c.getFileLock(); err != nil {
-		return nil, err
-	}
-	defer c.fileLock.Unlock()
-	if err := c.v.ReadInConfig(); err != nil {
+	if err := c.readInConfig(); err != nil {
 		return nil, err
 	}
 	return c, nil
 }
 
+func (c *Config) ReadInConfig() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.readInConfig()
+}
+
+func (c *Config) readInConfig() error {
+	if err := c.getFileLock(); err != nil {
+		return err
+	}
+	defer c.fileLock.Unlock()
+	return c.v.ReadInConfig()
+}
+
 func (c *Config) Unmarshal(key string, raw interface{}) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.unmarshal(key, raw)
+}
+
+func (c *Config) unmarshal(key string, raw interface{}) error {
 	return c.v.UnmarshalKey(key, raw)
 }
 
 // Set can only update one section at a time.
 func (c *Config) Set(key string, value interface{}) error {
-	if err := allSections[key].validate(value); err != nil {
-		return err
-	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.set(key, value)
+}
+
+// Set can only update one section at a time.
+func (c *Config) set(key string, value interface{}) error {
 	if !checkIfSectionKey(key) {
 		return notSectionKeyError(key)
 	}
-	if err := c.getFileLock(); err != nil {
-		return err
-	}
-	defer c.fileLock.Unlock()
-	if err := c.Update(); err != nil {
+	if err := c.update(); err != nil {
 		return err
 	}
 	kind := reflect.ValueOf(value).Kind()
 	if kind == reflect.Struct || kind == reflect.Ptr {
 		return c.setStruct(key, value)
 	}
-	c.set(key, value)
+	if err := c.validateAndSet(key, value); err != nil {
+		return err
+	}
 	if c.AutoWrite {
-		return c.Write()
+		return c.write()
 	}
 	return nil
 }
 
 // SetFromMap can only update one section at a time.
 func (c *Config) SetFromMap(sectionKey string, newConfig map[string]interface{}, force bool) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.setFromMap(sectionKey, newConfig, force)
+}
+
+func (c *Config) setFromMap(sectionKey string, newConfig map[string]interface{}, force bool) error {
 	if !checkIfSectionKey(sectionKey) {
 		return notSectionKeyError(sectionKey)
 	}
-	if err := c.getFileLock(); err != nil {
-		return err
-	}
-	defer c.fileLock.Unlock()
-	if err := c.Update(); err != nil {
+	if err := c.update(); err != nil {
 		return err
 	}
 
@@ -191,7 +215,7 @@ func (c *Config) SetFromMap(sectionKey string, newConfig map[string]interface{},
 		if force {
 			// If failed to convert new config map to a struct of that section then
 			// try writing to section with a map instead.
-			return c.Set(sectionKey, newConfig)
+			return c.set(sectionKey, newConfig)
 		}
 		return err
 	}
@@ -209,37 +233,42 @@ func (c *Config) SetFromMap(sectionKey string, newConfig map[string]interface{},
 		}
 		newConfig[key] = val
 	}
-	return c.Set(sectionKey, newConfig)
+	return c.set(sectionKey, newConfig)
 }
 
 func (c *Config) SetField(sectionKey, valueKey, value string, force bool) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	if !checkIfSectionKey(sectionKey) {
 		return notSectionKeyError(sectionKey)
 	}
 
 	section := allSections[sectionKey]
 	s := map[string]interface{}{}
-	c.Unmarshal(section.key, &s)
+	c.unmarshal(section.key, &s)
 	s[valueKey] = value
 	delete(s, "updated")
-	return c.SetFromMap(sectionKey, s, force)
+	return c.setFromMap(sectionKey, s, force)
 }
 
 func (c *Config) Update() error {
-	if err := c.getFileLock(); err != nil {
-		return err
-	}
-	defer c.fileLock.Unlock()
-	return c.v.ReadInConfig()
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.update()
+}
+func (c *Config) update() error {
+	return c.readInConfig()
 }
 
 func (c *Config) Reload() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	configFile := c.v.ConfigFileUsed()
 	// Need a new viper instance to clear old settings
 	c.v = viper.New()
 	c.v.SetFs(fs)
 	c.v.SetConfigFile(configFile)
-	return c.v.ReadInConfig()
+	return c.readInConfig()
 }
 
 // TODO Only update if given time is after the "udpate" field of the section updating and set "update" field to given time if updating
@@ -250,6 +279,9 @@ func (c *Config) StrictSet(key string, value interface{}, time time.Time) error 
 */
 
 func (c *Config) Unset(key string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	configMap := c.v.AllSettings()
 	path := strings.Split(key, ".")
 	deepestMap, err := deepSearch(configMap, path[0:len(path)-1])
@@ -276,7 +308,7 @@ func (c *Config) Unset(key string) error {
 	}
 	c.v.Set(path[0]+".updated", now())
 	if c.AutoWrite {
-		return c.Write()
+		return c.write()
 	}
 	return nil
 }
@@ -314,18 +346,26 @@ func (c *Config) setStruct(key string, value interface{}) error {
 	if err != nil {
 		return err
 	}
-	c.set(key, m)
+	if err := c.validateAndSet(key, m); err != nil {
+		return err
+	}
 	if c.AutoWrite {
-		return c.Write()
+		return c.write()
 	}
 	return nil
 }
 
 func (c *Config) Write() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.write()
+}
+
+func (c *Config) write() error {
 	configMap := map[string]interface{}{}
 	for key := range allSections {
 		if key != SecretsKey {
-			configMap[key] = c.Get(key)
+			configMap[key] = c.get(key)
 		}
 	}
 
@@ -339,7 +379,10 @@ func (c *Config) Write() error {
 		eventclient.UploadEvents()
 
 	}
-
+	if err := c.getFileLock(); err != nil {
+		return err
+	}
+	defer c.fileLock.Unlock()
 	return c.v.WriteConfig()
 }
 
@@ -352,12 +395,26 @@ func checkIfSectionKey(key string) bool {
 	return ok
 }
 
-func (c *Config) set(key string, value interface{}) {
+func (c *Config) validateAndSet(key string, value interface{}) error {
+	// Section will be the first part of the key
+	section := strings.Split(key, ".")[0]
+	// Validate the section first.
+	if err := allSections[section].validate(value); err != nil {
+		return err
+	}
+	// Set the value and add the time that the section was updated at.
 	c.v.Set(key, value)
-	c.v.Set(strings.Split(key, ".")[0]+".updated", now())
+	c.v.Set(section+".updated", now())
+	return nil
 }
 
 func (c *Config) Get(key string) interface{} {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.v.Get(key)
+}
+
+func (c *Config) get(key string) interface{} {
 	return c.v.Get(key)
 }
 

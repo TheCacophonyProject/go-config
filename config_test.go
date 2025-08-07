@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/rand"
 	"path"
+	"sync"
 	"testing"
 	"time"
 
@@ -273,6 +274,32 @@ func TestMapToLocation(t *testing.T) {
 	require.NoError(t, conf.SetFromMap(LocationKey, locationMap, false))
 	require.NoError(t, conf.Unmarshal(LocationKey, &location))
 	equalLocation(t, locationExpected, location)
+}
+
+func TestThreadSafe(t *testing.T) {
+	defer newFs(t, "")()
+	conf, err := New(DefaultConfigDir)
+	require.NoError(t, err)
+
+	var wg sync.WaitGroup
+	errCh := make(chan error, 1000)
+
+	for range 1000 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := conf.Set(DeviceKey, randomDevice()); err != nil {
+				errCh <- err
+			}
+		}()
+	}
+
+	wg.Wait()
+	close(errCh)
+
+	for err := range errCh {
+		require.NoError(t, err) // fails the test on first error
+	}
 }
 
 func TestNotWritingZeroValues(t *testing.T) {
