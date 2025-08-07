@@ -414,6 +414,36 @@ func (c *Config) Get(key string) interface{} {
 	return c.v.Get(key)
 }
 
+func (c *Config) SetMultipleSections(newConfig map[string]interface{}) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.setMultipleSections(newConfig)
+}
+
+func (c *Config) setMultipleSections(newConfig map[string]interface{}) error {
+	// Validate all sections before setting them.
+	for sectionKey, value := range newConfig {
+		section, ok := allSections[sectionKey]
+		if !ok {
+			return notSectionKeyError(sectionKey)
+		}
+		if err := section.validate(value); err != nil {
+			return err
+		}
+	}
+
+	for key, value := range newConfig {
+		if err := c.set(key, value); err != nil {
+			return fmt.Errorf("only partial config set, failed to set %s: %v", key, err)
+		}
+	}
+
+	if c.AutoWrite {
+		return c.write()
+	}
+	return nil
+}
+
 func (c *Config) get(key string) interface{} {
 	return c.v.Get(key)
 }
