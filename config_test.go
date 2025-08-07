@@ -307,8 +307,7 @@ func TestInvalidSection(t *testing.T) {
 	conf, err := New(DefaultConfigDir)
 	require.NoError(t, err)
 
-	require.NoError(t, conf.SetField("invalid-section", "key", "value", false))
-
+	require.Error(t, conf.SetField("invalid-section", "key", "value", false))
 }
 
 func TestValidationFailOnSettingMultipleSections(t *testing.T) {
