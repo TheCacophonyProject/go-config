@@ -1,0 +1,2 @@
+#!/bin/bash
+exec /usr/bin/cacophony-config-utils sync "$@"
