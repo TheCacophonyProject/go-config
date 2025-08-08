@@ -351,7 +351,7 @@ func TestSettingMultipleSections(t *testing.T) {
 	defer newFs(t, "")()
 	conf, err := New(DefaultConfigDir)
 	require.NoError(t, err)
-
+	newNow()
 	d := randomDevice()
 	w := randomWindows()
 	l := randomLocation()
