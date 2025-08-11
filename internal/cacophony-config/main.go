@@ -1,8 +1,9 @@
-package main
+package cacophonyconfig
 
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	config "github.com/TheCacophonyProject/go-config"
@@ -29,25 +30,30 @@ func (Args) Version() string {
 	return version
 }
 
-func procArgs() Args {
+func parseArgs(input []string) (Args, error) {
 	var args Args
 	args.ConfigDir = config.DefaultConfigDir
-	arg.MustParse(&args)
-	return args
-}
-
-func main() {
-	if err := runMain(); err != nil {
-		log.Fatal(err)
+	parser, err := arg.NewParser(arg.Config{}, &args)
+	if err != nil {
+		return Args{}, err
 	}
+	err = parser.Parse(input)
+	if errors.Is(err, arg.ErrHelp) {
+		parser.WriteHelp(os.Stdout)
+		os.Exit(0)
+	}
+	return args, err
 }
 
-func runMain() error {
-	args := procArgs()
+func Run(inputArgs []string) error {
+	args, err := parseArgs(inputArgs)
+	if err != nil {
+		return fmt.Errorf("failed to parse args: %v", err)
+	}
 
 	log = logging.NewLogger(args.LogLevel)
 
-	log.Printf("running version: %s", version)
+	log.Printf("Running version: %s", version)
 
 	if args.Write {
 		return writeNewSettings(&args)

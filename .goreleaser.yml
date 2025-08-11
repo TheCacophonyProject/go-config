@@ -9,41 +9,16 @@ release:
   name_template: "{{.Tag}}"
 
 builds:
-  - id: cacophony-config-import
+  - id: cacophony-config-utils
     goos:
       - linux
     goarch:
-      - arm
       - arm64
     goarm:
       - "7"
-    main: ./cmd/cacophony-config-import
+    main: ./cmd/cacophony-config-utils
     ldflags: -s -w -X main.version={{.Version}}
-    binary: cacophony-config-import
-
-  - id: cacophony-config
-    goos:
-      - linux
-    goarch:
-      - arm
-      - arm64
-    goarm:
-      - "7"
-    main: ./cmd/cacophony-config
-    ldflags: -s -w -X main.version={{.Version}}
-    binary: cacophony-config
-
-  - id: cacophony-config-sync
-    goos:
-      - linux
-    goarch:
-      - arm
-      - arm64
-    goarm:
-      - "7"
-    main: ./cmd/cacophony-config-sync
-    ldflags: -s -w -X main.version={{.Version}}
-    binary: cacophony-config-sync
+    binary: cacophony-config-utils
 
 nfpms:
   - vendor: The Cacophony Project
@@ -58,6 +33,10 @@ nfpms:
     contents:
       - src: _release/cacophony-config-sync.service
         dst: /etc/systemd/system/cacophony-config-sync.service
+      - src: _release/cacophony-config
+        dst: /usr/bin/cacophony-config
+      - src: _release/cacophony-config-sync
+        dst: /usr/bin/cacophony-config-sync
     scripts:
       postinstall: "_release/postinstall.sh"
 

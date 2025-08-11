@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/rand"
 	"path"
+	"sync"
 	"testing"
 	"time"
 
@@ -275,6 +276,113 @@ func TestMapToLocation(t *testing.T) {
 	equalLocation(t, locationExpected, location)
 }
 
+func TestThreadSafe(t *testing.T) {
+	defer newFs(t, "")()
+	conf, err := New(DefaultConfigDir)
+	require.NoError(t, err)
+
+	var wg sync.WaitGroup
+	errCh := make(chan error, 1000)
+
+	for range 1000 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := conf.Set(DeviceKey, randomDevice()); err != nil {
+				errCh <- err
+			}
+		}()
+	}
+
+	wg.Wait()
+	close(errCh)
+
+	for err := range errCh {
+		require.NoError(t, err) // fails the test on first error
+	}
+}
+
+func TestInvalidSection(t *testing.T) {
+	defer newFs(t, "")()
+	conf, err := New(DefaultConfigDir)
+	require.NoError(t, err)
+
+	require.Error(t, conf.SetField("invalid-section", "key", "value", false))
+}
+
+func TestValidationFailOnSettingMultipleSections(t *testing.T) {
+	defer newFs(t, "")()
+	conf, err := New(DefaultConfigDir)
+	require.NoError(t, err)
+
+	d := randomDevice()
+	w := randomWindows()
+	l := randomLocation()
+	h := randomTestHosts()
+	l.Longitude = 200 // Should fail, making it invalid an no sections should be set
+
+	err = conf.SetMultipleSections(map[string]interface{}{
+		DeviceKey:    d,
+		WindowsKey:   w,
+		LocationKey:  l,
+		TestHostsKey: h,
+	})
+
+	require.Error(t, err)
+
+	conf, err = New(DefaultConfigDir)
+	require.NoError(t, err)
+	d2 := Device{}
+	require.NoError(t, conf.Unmarshal(DeviceKey, &d2))
+	w2 := Windows{}
+	require.NoError(t, conf.Unmarshal(WindowsKey, &w2))
+	l2 := Location{}
+	require.NoError(t, conf.Unmarshal(LocationKey, &l2))
+	h2 := TestHosts{}
+	require.NoError(t, conf.Unmarshal(TestHostsKey, &h2))
+
+	require.NotEqual(t, d, d2)
+	notEqualWindows(t, w, w2)
+	notEqualLocation(t, l, l2)
+	require.NotEqual(t, h, h2)
+}
+
+func TestSettingMultipleSections(t *testing.T) {
+	defer newFs(t, "")()
+	conf, err := New(DefaultConfigDir)
+	require.NoError(t, err)
+	newNow()
+	d := randomDevice()
+	w := randomWindows()
+	l := randomLocation()
+	h := randomTestHosts()
+
+	err = conf.SetMultipleSections(map[string]interface{}{
+		DeviceKey:    d,
+		WindowsKey:   w,
+		LocationKey:  l,
+		TestHostsKey: h,
+	})
+
+	require.NoError(t, err)
+
+	conf, err = New(DefaultConfigDir)
+	require.NoError(t, err)
+	d2 := Device{}
+	require.NoError(t, conf.Unmarshal(DeviceKey, &d2))
+	w2 := Windows{}
+	require.NoError(t, conf.Unmarshal(WindowsKey, &w2))
+	l2 := Location{}
+	require.NoError(t, conf.Unmarshal(LocationKey, &l2))
+	h2 := TestHosts{}
+	require.NoError(t, conf.Unmarshal(TestHostsKey, &h2))
+
+	require.Equal(t, d, d2)
+	equalWindows(t, w, w2)
+	equalLocation(t, l, l2)
+	require.Equal(t, h, h2)
+}
+
 func TestNotWritingZeroValues(t *testing.T) {
 	defer newFs(t, "")()
 	conf, err := New(DefaultConfigDir)
@@ -472,6 +580,7 @@ func randomLocation() Location {
 		Longitude: float32(rand.Float64()*360 - 180),
 		Latitude:  float32(rand.Float64()*180 - 90),
 		Timestamp: now(),
+		Altitude:  float32(rand.Float64()),
 	}
 }
 
@@ -483,12 +592,28 @@ func equalLocation(t *testing.T, l1, l2 Location) {
 	require.Equal(t, l1.Timestamp.Unix(), l2.Timestamp.Unix())
 }
 
+func notEqualLocation(t *testing.T, l1, l2 Location) {
+	require.NotEqual(t, l1.Accuracy, l2.Accuracy)
+	require.NotEqual(t, l1.Altitude, l2.Altitude)
+	require.NotEqual(t, l1.Latitude, l2.Latitude)
+	require.NotEqual(t, l1.Longitude, l2.Longitude)
+	require.NotEqual(t, l1.Timestamp.Unix(), l2.Timestamp.Unix())
+}
+
 func equalWindows(t *testing.T, w1, w2 Windows) {
 	require.Equal(t, w1.StartRecording, w2.StartRecording)
 	require.Equal(t, w1.StopRecording, w2.StopRecording)
 	require.Equal(t, w1.PowerOn, w2.PowerOn)
 	require.Equal(t, w1.PowerOff, w2.PowerOff)
 	require.Equal(t, w1.Updated.Unix(), w2.Updated.Unix())
+}
+
+func notEqualWindows(t *testing.T, w1, w2 Windows) {
+	require.NotEqual(t, w1.StartRecording, w2.StartRecording)
+	require.NotEqual(t, w1.StopRecording, w2.StopRecording)
+	require.NotEqual(t, w1.PowerOn, w2.PowerOn)
+	require.NotEqual(t, w1.PowerOff, w2.PowerOff)
+	require.NotEqual(t, w1.Updated.Unix(), w2.Updated.Unix())
 }
 
 func randomTestHosts() TestHosts {
