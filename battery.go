@@ -58,7 +58,7 @@ type Battery struct {
 	MinimumVoltageDetection float32 `mapstructure:"minimum-voltage-detection"`
 	DepletionHistoryHours   int     `mapstructure:"depletion-history-hours"`
 	DepletionWarningHours   float32 `mapstructure:"depletion-warning-hours"`
-	Updated                 any     `mapstructure:"updated,omitempty"` // Standard config timestamp
+	Updated                 any     `mapstructure:"updated,omitempty"`
 }
 
 // DefaultBattery returns default battery configuration
@@ -119,12 +119,7 @@ func (bp *BatteryPack) DetectCellCount(voltage float32) int {
 
 	// Use nominal voltage if specified, otherwise fall back to average of min and max
 	nominalVoltage := (bp.Type.MinVoltage + bp.Type.MaxVoltage) / 2
-	estimatedCells := int(voltage/nominalVoltage + 0.5) // Round to nearest integer
-
-	// Validate reasonable cell count
-	if estimatedCells < 1 {
-		estimatedCells = 1
-	}
+	estimatedCells := max(int(voltage/nominalVoltage+0.5), 1)
 
 	return estimatedCells
 }
