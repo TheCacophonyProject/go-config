@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../tc2-hat-controller"
+		},
+		{
+			"path": "../management-interface"
+		}
+	],
+	"settings": {}
+}
