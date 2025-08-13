@@ -6,10 +6,11 @@ import (
 
 	cacophonyconfig "github.com/TheCacophonyProject/go-config/internal/cacophony-config"
 	cacophonyconfigsync "github.com/TheCacophonyProject/go-config/internal/cacophony-config-sync"
-	"github.com/sirupsen/logrus"
+	"github.com/TheCacophonyProject/go-utils/logging"
 )
 
-var log *logrus.Logger
+var log = logging.NewLogger("info")
+var version = "<not set>"
 
 func main() {
 	err := runMain()
@@ -30,9 +31,9 @@ func runMain() error {
 	var err error
 	switch sub {
 	case "sync":
-		err = cacophonyconfigsync.Run(args)
+		err = cacophonyconfigsync.Run(args, version)
 	case "config":
-		err = cacophonyconfig.Run(args)
+		err = cacophonyconfig.Run(args, version)
 	default:
 		err = fmt.Errorf("unknown subcommand: %s", sub)
 	}

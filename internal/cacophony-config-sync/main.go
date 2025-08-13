@@ -452,12 +452,11 @@ type Args struct {
 	logging.LogArgs
 }
 
-func (Args) Version() string {
-	return version
-}
+var defaultArgs = Args{}
 
-func parseArgs(input []string) (Args, error) {
-	var args Args
+func procArgs(input []string) (Args, error) {
+	args := defaultArgs
+
 	parser, err := arg.NewParser(arg.Config{}, &args)
 	if err != nil {
 		return Args{}, err
@@ -467,17 +466,22 @@ func parseArgs(input []string) (Args, error) {
 		parser.WriteHelp(os.Stdout)
 		os.Exit(0)
 	}
+	if errors.Is(err, arg.ErrVersion) {
+		fmt.Println(version)
+		os.Exit(0)
+	}
 	return args, err
 }
 
-func Run(inputArgs []string) error {
-	args, err := parseArgs(inputArgs)
+func Run(inputArgs []string, ver string) error {
+	version = ver
+	args, err := procArgs(inputArgs)
 	if err != nil {
 		return fmt.Errorf("failed to parse args: %v", err)
 	}
+	log = logging.NewLogger(args.LogLevel)
 
 	log.Println("Starting Cacophony Config Sync Service")
-	log = logging.NewLogger(args.LogLevel)
 
 	log.Info("Running version: ", version)
 
