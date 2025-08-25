@@ -33,22 +33,24 @@ func init() {
 }
 
 type ThermalMotion struct {
-	DynamicThreshold bool   `mapstructure:"dynamic-threshold"`
-	TempThreshMin    uint16 `mapstructure:"temp-thresh-min"`
-	TempThreshMax    uint16 `mapstructure:"temp-thresh-max"`
-	TempThresh       uint16 `mapstructure:"temp-thresh"`
-	DeltaThresh      uint16 `mapstructure:"delta-thresh"`
-	CountThresh      int    `mapstructure:"count-thresh"`
-	FrameCompareGap  int    `mapstructure:"frame-compare-gap"`
-	UseOneDiffOnly   bool   `mapstructure:"use-one-diff-only"`
-	TriggerFrames    int    `mapstructure:"trigger-frames"`
-	WarmerOnly       bool   `mapstructure:"warmer-only"`
-	EdgePixels       int    `mapstructure:"edge-pixels"`
-	Verbose          bool   `mapstructure:"verbose"`
-	RunClassifier    bool   `mapstructure:"run-classifier"`
-	TrackingEvents   bool   `mapstructure:"tracking-events"`
-	DoTracking       bool   `mapstructure:"do-tracking"`
-	BluetoothBeacons bool   `mapstructure:"bluetooth-beacons"`
+	DynamicThreshold  bool   `mapstructure:"dynamic-threshold"`
+	TempThreshMin     uint16 `mapstructure:"temp-thresh-min"`
+	TempThreshMax     uint16 `mapstructure:"temp-thresh-max"`
+	TempThresh        uint16 `mapstructure:"temp-thresh"`
+	DeltaThresh       uint16 `mapstructure:"delta-thresh"`
+	CountThresh       int    `mapstructure:"count-thresh"`
+	FrameCompareGap   int    `mapstructure:"frame-compare-gap"`
+	UseOneDiffOnly    bool   `mapstructure:"use-one-diff-only"`
+	TriggerFrames     int    `mapstructure:"trigger-frames"`
+	WarmerOnly        bool   `mapstructure:"warmer-only"`
+	EdgePixels        int    `mapstructure:"edge-pixels"`
+	Verbose           bool   `mapstructure:"verbose"`
+	RunClassifier     bool   `mapstructure:"run-classifier"`
+	TrackingEvents    bool   `mapstructure:"tracking-events"`
+	DoTracking        bool   `mapstructure:"do-tracking"`
+	BluetoothBeacons  bool   `mapstructure:"bluetooth-beacons"`
+	PostProcessEvents bool   `mapstructure:"postprocess-events"`
+	PostProcess       bool   `mapstructure:"postprocess"`
 }
 
 func DefaultThermalMotion(cameraModel string) ThermalMotion {
