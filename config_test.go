@@ -48,7 +48,7 @@ func TestReadingConfigInDir(t *testing.T) {
 
 	windows := DefaultWindows()
 	windowChanges := windows
-	windowChanges.PowerOff = "+1s"
+	windowChanges.StartRecording = "+1s"
 	assert.NoError(t, conf.Unmarshal(WindowsKey, &windows))
 	assert.Equal(t, windowChanges, windows)
 
@@ -563,8 +563,6 @@ func randomWindows() Windows {
 	return Windows{
 		StartRecording: randomDuration(),
 		StopRecording:  randomDuration(),
-		PowerOn:        randomDuration(),
-		PowerOff:       randomDuration(),
 		Updated:        updated,
 	}
 }
@@ -603,16 +601,12 @@ func notEqualLocation(t *testing.T, l1, l2 Location) {
 func equalWindows(t *testing.T, w1, w2 Windows) {
 	require.Equal(t, w1.StartRecording, w2.StartRecording)
 	require.Equal(t, w1.StopRecording, w2.StopRecording)
-	require.Equal(t, w1.PowerOn, w2.PowerOn)
-	require.Equal(t, w1.PowerOff, w2.PowerOff)
 	require.Equal(t, w1.Updated.Unix(), w2.Updated.Unix())
 }
 
 func notEqualWindows(t *testing.T, w1, w2 Windows) {
 	require.NotEqual(t, w1.StartRecording, w2.StartRecording)
 	require.NotEqual(t, w1.StopRecording, w2.StopRecording)
-	require.NotEqual(t, w1.PowerOn, w2.PowerOn)
-	require.NotEqual(t, w1.PowerOff, w2.PowerOff)
 	require.NotEqual(t, w1.Updated.Unix(), w2.Updated.Unix())
 }
 

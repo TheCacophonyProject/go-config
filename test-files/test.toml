@@ -8,7 +8,7 @@
   accuracy = 543
 
 [windows]
-  power-off = "+1s"
+  start-recording = "+1s"
 
 [thermal-recorder]
   max-secs = 321
