@@ -18,8 +18,8 @@ require (
 	github.com/spf13/viper v1.9.0
 	github.com/stretchr/testify v1.9.0
 	github.com/wawandco/fako v0.0.0-20180828010250-c36a0bc97398
-	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f // indirect
+	golang.org/x/text v0.3.8 // indirect
 )
 
 require (
