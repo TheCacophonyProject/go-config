@@ -21,7 +21,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
+	"strings"
 	"time"
 
 	api "github.com/TheCacophonyProject/go-api"
@@ -29,6 +31,7 @@ import (
 	"github.com/TheCacophonyProject/go-utils/logging"
 	"github.com/TheCacophonyProject/modemd/modemlistener"
 	"github.com/alexflint/go-arg"
+	"github.com/rjeczalik/notify"
 )
 
 const (
@@ -130,16 +133,6 @@ var ConfigSections = Sections{
 				MapKey:    "stop-recording",
 			},
 			{
-				APIKey:    "powerOn",
-				ConfigKey: "PowerOn",
-				MapKey:    "power-on",
-			},
-			{
-				APIKey:    "powerOff",
-				ConfigKey: "PowerOff",
-				MapKey:    "power-off",
-			},
-			{
 				APIKey:    "updated",
 				ConfigKey: "Updated",
 				MapKey:    "updated",
@@ -220,6 +213,32 @@ func NewSyncService() (*SyncService, error) {
 		apiClient: apiClient,
 		config:    conf,
 	}, nil
+}
+
+func (s *SyncService) PrintConfig() {
+	content, err := os.ReadFile(filepath.Join(configDir, config.ConfigFileName))
+	if err != nil {
+		log.Errorf("Error reading config file: %v", err)
+	}
+	lines := strings.SplitSeq(string(content), "\n")
+	out := ""
+	printing := true
+	for line := range lines {
+		// Stop printing after [secrets].
+		if strings.Contains(line, "[secrets]") {
+			printing = false
+			continue
+		}
+		// Start printing again in new section.
+		if strings.HasPrefix(line, "[") {
+			printing = true
+		}
+		if printing {
+			out += line + "\n"
+		}
+	}
+
+	log.Info("Current Config:\n" + out)
 }
 
 func (s *SyncService) syncSettings() error {
@@ -331,7 +350,7 @@ func (s *SyncService) readCurrentSettings() (map[string]interface{}, error) {
 			if field.IsValid() {
 				sectionSettings[mapping.APIKey] = field.Interface()
 			} else {
-				fmt.Printf("Field %s not found in section %s\n", mapping.ConfigKey, section.Key)
+				log.Warnf("Field %s not found in section %s\n", mapping.ConfigKey, section.Key)
 			}
 		}
 
@@ -508,31 +527,105 @@ func Run(inputArgs []string, ver string) error {
 
 	log.Info("Running version: ", version)
 
-	modemConnectSignal, err := modemlistener.GetModemConnectedSignalListener()
-	if err != nil {
-		log.Println("Failed to get modem connected signal listener")
-	}
+	// Making runSyncChannel, string returned is the reason for the sync.
+	runSyncChannel := makeSyncChannel()
+
 	syncService, err := NewSyncService()
 	if err != nil {
 		return fmt.Errorf("failed to initialize sync service: %v", err)
 	}
 	for {
 
+		log.Println("Config before sync:")
+		syncService.PrintConfig()
 		// Perform a single sync operation
 		if err := syncService.syncSettings(); err != nil {
 			return fmt.Errorf("sync operation failed: %v", err)
 		}
+		log.Println("Config after sync:")
+		syncService.PrintConfig()
 
-		emptyChannel(modemConnectSignal)
+		// TODO: Check that if the config changes while doing a sync that it will sync again with the new config
+		// 	     This emptyChannel might prevent this from
+		emptyChannel(runSyncChannel)
+
 		select {
-		case <-modemConnectSignal:
-			log.Println("Modem connected.")
+		case reason := <-runSyncChannel:
+			log.Printf("Running sync for reason: %v", reason)
 		case <-time.After(syncInterval):
+			log.Println("Running sync due to regular sync interval of ", syncInterval)
 		}
 	}
 }
 
-func emptyChannel(ch chan time.Time) {
+func makeSyncChannel() chan string {
+	// Make channel that will trigger a sync, the string is the reason for the sync.
+	c := make(chan string, 10)
+
+	// Setup modem connected signals to channel
+	go func(c chan string) {
+		failedCount := 0
+		var modemConnectedChan chan time.Time
+		for {
+			var err error
+			modemConnectedChan, err = modemlistener.GetModemConnectedSignalListener()
+			if err != nil {
+				// Will probably just be a system timing issue, try again in a second
+				time.Sleep(time.Second)
+				failedCount++
+				if failedCount == 10 { // Just log this once
+					log.Error("Failed to get modem connected signal listener")
+				}
+			} else {
+				// Got the signal listener, break out of the loop
+				break
+			}
+		}
+
+		for {
+			<-modemConnectedChan
+			c <- "modem connected"
+		}
+	}(c)
+
+	// Setup config file changes to channel
+	go func(c chan string) {
+		configFilePath := filepath.Join(configDir, config.ConfigFileName)
+		fsEvents := make(chan notify.EventInfo, 16)
+		if err := notify.Watch(configFilePath, fsEvents,
+			notify.Write,
+			notify.Create,
+			notify.Rename,
+			notify.Remove,
+		); err != nil {
+			log.Error("watch:", err)
+			return
+		}
+		defer notify.Stop(fsEvents)
+
+		fileChange := false
+		for {
+			// This select with the timeout is used so if the config file is changed, it will wait
+			// 10 seconds before triggering the sync, and any more config changes will restart the timer.
+			// This is so you won't get lots of sync calls when someone is on sidekick and changing the config lots
+			select {
+			case <-fsEvents:
+				fileChange = true
+				log.Info("Config file changes, waiting 10 seconds until triggering sync.")
+			case <-time.After(10 * time.Second):
+				if fileChange {
+					log.Info("Triggering sync from config change.")
+					c <- "config file changed"
+					fileChange = false
+				}
+			}
+		}
+	}(c)
+
+	return c
+}
+
+func emptyChannel(ch chan string) {
 	for {
 		select {
 		case <-ch:

@@ -25,7 +25,7 @@ require (
 require (
 	github.com/TheCacophonyProject/go-utils v0.1.1
 	github.com/TheCacophonyProject/modemd v1.10.0
-	github.com/kr/pretty v0.2.1
+	github.com/rjeczalik/notify v0.9.3
 	github.com/sirupsen/logrus v1.9.3
 )
 
@@ -37,7 +37,6 @@ require (
 	github.com/godbus/dbus v4.1.0+incompatible // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/icrowley/fake v0.0.0-20180203215853-4178557ae428 // indirect
-	github.com/kr/text v0.1.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/markbates/inflect v1.0.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
