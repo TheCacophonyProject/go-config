@@ -21,8 +21,6 @@ func TestMapServerSettingsToConfig(t *testing.T) {
 				"windows": map[string]interface{}{
 					"startRecording": "+30m",
 					"stopRecording":  "-30m",
-					"powerOn":        "12:00",
-					"powerOff":       "13:00",
 					"updated":        "2023-08-22T10:00:00Z",
 				},
 			},
@@ -30,8 +28,6 @@ func TestMapServerSettingsToConfig(t *testing.T) {
 				"windows": map[string]interface{}{
 					"start-recording": "+30m",
 					"stop-recording":  "-30m",
-					"power-on":        "12:00",
-					"power-off":       "13:00",
 					"updated":         time.Date(2023, 8, 22, 10, 0, 0, 0, time.UTC),
 				},
 			},
