@@ -651,13 +651,3 @@ func makeSyncChannel() chan string {
 
 	return c
 }
-
-func emptyChannel(ch chan string) {
-	for {
-		select {
-		case <-ch:
-		default:
-			return
-		}
-	}
-}
