@@ -21,7 +21,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
+	"strings"
 	"time"
 
 	api "github.com/TheCacophonyProject/go-api"
@@ -29,6 +31,7 @@ import (
 	"github.com/TheCacophonyProject/go-utils/logging"
 	"github.com/TheCacophonyProject/modemd/modemlistener"
 	"github.com/alexflint/go-arg"
+	"github.com/rjeczalik/notify"
 )
 
 const (
@@ -36,7 +39,7 @@ const (
 	syncInterval = time.Hour * 24
 )
 
-func stringToTimeConverter(value interface{}) (interface{}, error) {
+func stringToTimeConverter(value any) (any, error) {
 	strVal, ok := value.(string)
 	if !ok {
 		return nil, fmt.Errorf("expected string for time conversion, got %T", value)
@@ -49,7 +52,7 @@ func stringToTimeConverter(value interface{}) (interface{}, error) {
 }
 
 // ConverterFunc defines the function signature for value conversion
-type ConverterFunc func(interface{}) (interface{}, error)
+type ConverterFunc func(any) (any, error)
 
 // Mapping holds the API key, config key, and optional converter function
 type Mapping struct {
@@ -63,7 +66,7 @@ type Mapping struct {
 type Section struct {
 	Name     string
 	Key      string
-	Config   interface{}
+	Config   any
 	Updated  time.Time
 	Mappings []Mapping
 }
@@ -130,16 +133,6 @@ var ConfigSections = Sections{
 				MapKey:    "stop-recording",
 			},
 			{
-				APIKey:    "powerOn",
-				ConfigKey: "PowerOn",
-				MapKey:    "power-on",
-			},
-			{
-				APIKey:    "powerOff",
-				ConfigKey: "PowerOff",
-				MapKey:    "power-off",
-			},
-			{
 				APIKey:    "updated",
 				ConfigKey: "Updated",
 				MapKey:    "updated",
@@ -190,13 +183,13 @@ var ConfigSections = Sections{
 }
 
 type CacophonyAPIInterface interface {
-	GetDeviceSettings() (map[string]interface{}, error)
-	UpdateDeviceSettings(settings map[string]interface{}) (map[string]interface{}, error)
+	GetDeviceSettings() (map[string]any, error)
+	UpdateDeviceSettings(settings map[string]any) (map[string]any, error)
 }
 
 type CacophonyConfigInterface interface {
-	Unmarshal(key string, rawVal interface{}) error
-	SetFromMap(sectionKey string, newConfig map[string]interface{}, force bool) error
+	Unmarshal(key string, rawVal any) error
+	SetFromMap(sectionKey string, newConfig map[string]any, force bool) error
 	Write() error
 }
 
@@ -220,6 +213,46 @@ func NewSyncService() (*SyncService, error) {
 		apiClient: apiClient,
 		config:    conf,
 	}, nil
+}
+
+func (s *SyncService) PrintConfig() {
+	content, err := os.ReadFile(filepath.Join(configDir, config.ConfigFileName))
+	if err != nil {
+		log.Errorf("Error reading config file: %v", err)
+		return
+	}
+
+	inSecretsSection := false
+	var out strings.Builder
+	for line := range strings.SplitSeq(string(content), "\n") {
+		// Just some white space.
+		if strings.TrimSpace(line) == "" {
+			out.WriteString(line + "\n")
+			continue
+		}
+		// Detect when the secrets section starts [secrets].
+		if strings.HasPrefix(line, "[secrets]") {
+			inSecretsSection = true
+			out.WriteString(line + "\n")
+			continue
+		}
+		// Detect when secrets section ends.
+		if strings.HasPrefix(line, "[") {
+			inSecretsSection = false
+		}
+		if inSecretsSection {
+			parts := strings.Split(line, "=")
+			if len(parts) >= 2 {
+				out.WriteString(fmt.Sprintf("%s = ************\n", parts[0]))
+			} else {
+				log.Warn("Not too sure how to parse line in secrets section")
+			}
+		} else {
+			out.WriteString(line + "\n")
+		}
+	}
+
+	log.Info("Current Config:\n" + out.String())
 }
 
 func (s *SyncService) syncSettings() error {
@@ -252,8 +285,8 @@ func (s *SyncService) syncSettings() error {
 	return nil
 }
 
-func (s *SyncService) filterUnchangedSettings(mappedSettings, deviceSettings map[string]interface{}) map[string]interface{} {
-	filteredSettings := make(map[string]interface{})
+func (s *SyncService) filterUnchangedSettings(mappedSettings, deviceSettings map[string]any) map[string]any {
+	filteredSettings := make(map[string]any)
 
 	log.Println("Starting to filter unchanged settings")
 
@@ -261,8 +294,8 @@ func (s *SyncService) filterUnchangedSettings(mappedSettings, deviceSettings map
 		log.Printf("Checking section: %s", section.Key)
 
 		if mappedSectionSettings, ok := mappedSettings[section.Key]; ok {
-			mappedSection := mappedSectionSettings.(map[string]interface{})
-			deviceSection, deviceOk := deviceSettings[section.Name].(map[string]interface{})
+			mappedSection := mappedSectionSettings.(map[string]any)
+			deviceSection, deviceOk := deviceSettings[section.Name].(map[string]any)
 
 			if !deviceOk {
 				log.Printf("Warning: Device settings for section %s not found or not a map", section.Name)
@@ -311,11 +344,11 @@ func (s *SyncService) filterUnchangedSettings(mappedSettings, deviceSettings map
 	return filteredSettings
 }
 
-func (s *SyncService) readCurrentSettings() (map[string]interface{}, error) {
+func (s *SyncService) readCurrentSettings() (map[string]any, error) {
 	if err := s.config.Reload(); err != nil {
 		return nil, err
 	}
-	settings := make(map[string]interface{})
+	settings := make(map[string]any)
 
 	for _, section := range ConfigSections {
 		err := s.config.Unmarshal(section.Key, section.Config)
@@ -325,13 +358,13 @@ func (s *SyncService) readCurrentSettings() (map[string]interface{}, error) {
 
 		sectionData := reflect.ValueOf(section.Config).Elem()
 
-		sectionSettings := make(map[string]interface{})
+		sectionSettings := make(map[string]any)
 		for _, mapping := range section.Mappings {
 			field := sectionData.FieldByName(mapping.ConfigKey)
 			if field.IsValid() {
 				sectionSettings[mapping.APIKey] = field.Interface()
 			} else {
-				fmt.Printf("Field %s not found in section %s\n", mapping.ConfigKey, section.Key)
+				log.Warnf("Field %s not found in section %s\n", mapping.ConfigKey, section.Key)
 			}
 		}
 
@@ -341,8 +374,8 @@ func (s *SyncService) readCurrentSettings() (map[string]interface{}, error) {
 	return settings, nil
 }
 
-func (s *SyncService) mapServerSettingsToConfig(serverSettings map[string]interface{}) map[string]interface{} {
-	mappedSettings := make(map[string]interface{})
+func (s *SyncService) mapServerSettingsToConfig(serverSettings map[string]any) map[string]any {
+	mappedSettings := make(map[string]any)
 
 	// Check if serverSettings is nil
 	if serverSettings == nil {
@@ -351,12 +384,12 @@ func (s *SyncService) mapServerSettingsToConfig(serverSettings map[string]interf
 	}
 
 	for _, section := range ConfigSections {
-		sectionSettings := make(map[string]interface{})
+		sectionSettings := make(map[string]any)
 
 		// Check if the section exists in serverSettings
 		if sectionData, ok := serverSettings[section.Name]; ok {
-			// Check if sectionData is a map[string]interface{}
-			if sectionMap, ok := sectionData.(map[string]interface{}); ok {
+			// Check if sectionData is a map[string]any
+			if sectionMap, ok := sectionData.(map[string]any); ok {
 				for _, mapping := range section.Mappings {
 					if value, ok := sectionMap[mapping.APIKey]; ok {
 						// If this is the "updated" field, convert it to time.Time
@@ -392,11 +425,11 @@ func (s *SyncService) mapServerSettingsToConfig(serverSettings map[string]interf
 	return mappedSettings
 }
 
-func (s *SyncService) updateConfig(settings map[string]interface{}) error {
+func (s *SyncService) updateConfig(settings map[string]any) error {
 	fmt.Printf("Settings: %v\n", settings)
 	for _, section := range ConfigSections {
 		if sectionSettings, ok := settings[section.Key]; ok {
-			newConfig := sectionSettings.(map[string]interface{})
+			newConfig := sectionSettings.(map[string]any)
 			fmt.Printf("New config: %v\n", newConfig)
 			err := s.config.SetFromMap(section.Key, newConfig, true)
 			if err != nil {
@@ -411,14 +444,14 @@ func (s *SyncService) updateConfig(settings map[string]interface{}) error {
 	return nil
 }
 
-func (s *SyncService) uploadSettingsToAPI(settings map[string]interface{}) (map[string]interface{}, error) {
-	settingsMap := make(map[string]interface{})
+func (s *SyncService) uploadSettingsToAPI(settings map[string]any) (map[string]any, error) {
+	settingsMap := make(map[string]any)
 
 	for _, section := range ConfigSections {
-		sectionMap := make(map[string]interface{})
-		if date, ok := settings[section.Name].(map[string]interface{})["updated"]; ok && !isEmptyValue(date) {
+		sectionMap := make(map[string]any)
+		if date, ok := settings[section.Name].(map[string]any)["updated"]; ok && !isEmptyValue(date) {
 			for _, mapping := range section.Mappings {
-				if value, ok := settings[section.Name].(map[string]interface{})[mapping.APIKey]; ok {
+				if value, ok := settings[section.Name].(map[string]any)[mapping.APIKey]; ok {
 					// Check if the value is non-empty before adding it to the map
 					if !isEmptyValue(value) {
 						log.Printf("Adding value to settings: %v", value)
@@ -441,7 +474,7 @@ func (s *SyncService) uploadSettingsToAPI(settings map[string]interface{}) (map[
 }
 
 // isEmptyValue checks if a value is considered empty
-func isEmptyValue(v interface{}) bool {
+func isEmptyValue(v any) bool {
 	switch value := v.(type) {
 	case nil:
 		return true
@@ -457,9 +490,9 @@ func isEmptyValue(v interface{}) bool {
 		return false
 	case time.Time:
 		return value.IsZero()
-	case []interface{}:
+	case []any:
 		return len(value) == 0
-	case map[string]interface{}:
+	case map[string]any:
 		return len(value) == 0
 	default:
 		return reflect.ValueOf(v).IsZero()
@@ -508,36 +541,113 @@ func Run(inputArgs []string, ver string) error {
 
 	log.Info("Running version: ", version)
 
-	modemConnectSignal, err := modemlistener.GetModemConnectedSignalListener()
-	if err != nil {
-		log.Println("Failed to get modem connected signal listener")
-	}
+	// Making runSyncChannel, string returned is the reason for the sync.
+	runSyncChannel := makeSyncChannel()
+
 	syncService, err := NewSyncService()
 	if err != nil {
 		return fmt.Errorf("failed to initialize sync service: %v", err)
 	}
-	for {
 
+	modemSyncInterval := time.Minute * 30
+	lastSyncTime := time.Time{}
+
+	for {
+		var syncReason string
+		select {
+		case syncReason = <-runSyncChannel:
+		case <-time.After(syncInterval):
+			syncReason = "interval sync"
+		}
+
+		if syncReason == "modem connected" && time.Since(lastSyncTime) < modemSyncInterval {
+			log.Infof("Skipping sync from modem connect as sync was ran within %s", modemSyncInterval.String())
+			continue
+		}
+
+		// TODO: If a sync occurs, and the file is changed. This will trigger another sync after the 10 second wait.
+		//       This is just a minor issue at the moment and can be fixed later.
+		//       Could compare the last config from the API and the local config, if they are the same, then don't sync again
+
+		log.Info("Running sync for reason: ", syncReason)
+		log.Println("Config before sync:")
+		syncService.PrintConfig()
 		// Perform a single sync operation
 		if err := syncService.syncSettings(); err != nil {
 			return fmt.Errorf("sync operation failed: %v", err)
 		}
-
-		emptyChannel(modemConnectSignal)
-		select {
-		case <-modemConnectSignal:
-			log.Println("Modem connected.")
-		case <-time.After(syncInterval):
-		}
+		log.Println("Config after sync:")
+		syncService.PrintConfig()
+		lastSyncTime = time.Now()
 	}
 }
 
-func emptyChannel(ch chan time.Time) {
-	for {
-		select {
-		case <-ch:
-		default:
+func makeSyncChannel() chan string {
+	// Make channel that will trigger a sync, the string is the reason for the sync.
+	c := make(chan string, 10)
+
+	// Add initial sync
+	c <- "initial sync"
+
+	// Setup modem connected signals to channel
+	go func(c chan string) {
+		failedCount := 0
+		var modemConnectedChan chan time.Time
+		for {
+			var err error
+			modemConnectedChan, err = modemlistener.GetModemConnectedSignalListener()
+			if err != nil {
+				// Will probably just be a system timing issue, try again in a second
+				time.Sleep(time.Second)
+				failedCount++
+				if failedCount == 10 { // Just log this once
+					log.Error("Failed to get modem connected signal listener")
+				}
+			} else {
+				// Got the signal listener, break out of the loop
+				break
+			}
+		}
+
+		for {
+			<-modemConnectedChan
+			c <- "modem connected"
+		}
+	}(c)
+
+	// Setup config file changes to channel
+	go func(c chan string) {
+		configFilePath := filepath.Join(configDir, config.ConfigFileName)
+		fsEvents := make(chan notify.EventInfo, 16)
+		if err := notify.Watch(configFilePath, fsEvents,
+			notify.Write,
+			notify.Create,
+			notify.Rename,
+			notify.Remove,
+		); err != nil {
+			log.Error("watch:", err)
 			return
 		}
-	}
+		defer notify.Stop(fsEvents)
+
+		fileChange := false
+		for {
+			// This select with the timeout is used so if the config file is changed, it will wait
+			// 10 seconds before triggering the sync, and any more config changes will restart the timer.
+			// This is so you won't get lots of sync calls when someone is on sidekick and changing the config lots
+			select {
+			case <-fsEvents:
+				fileChange = true
+				log.Info("Config file changes, waiting 10 seconds until triggering sync.")
+			case <-time.After(10 * time.Second):
+				if fileChange {
+					log.Info("Triggering sync from config change.")
+					c <- "config file changed"
+					fileChange = false
+				}
+			}
+		}
+	}(c)
+
+	return c
 }

@@ -1,6 +1,6 @@
 module github.com/TheCacophonyProject/go-config
 
-go 1.22.3
+go 1.25.0
 
 require (
 	github.com/TheCacophonyProject/event-reporter/v3 v3.8.0
@@ -25,6 +25,7 @@ require (
 require (
 	github.com/TheCacophonyProject/go-utils v0.1.1
 	github.com/TheCacophonyProject/modemd v1.10.0
+	github.com/rjeczalik/notify v0.9.3
 	github.com/sirupsen/logrus v1.9.3
 )
 

@@ -40,8 +40,6 @@ const WindowsKey = "windows"
 type Windows struct {
 	StartRecording string    `mapstructure:"start-recording"`
 	StopRecording  string    `mapstructure:"stop-recording"`
-	PowerOn        string    `mapstructure:"power-on"`
-	PowerOff       string    `mapstructure:"power-off"`
 	Updated        time.Time `mapstructure:"updated"`
 }
 
@@ -49,8 +47,6 @@ func DefaultWindows() Windows {
 	return Windows{
 		StartRecording: "-30m",
 		StopRecording:  "+30m",
-		PowerOn:        "-30m",
-		PowerOff:       "+30m",
 		Updated:        time.Now(),
 	}
 }
@@ -65,7 +61,7 @@ func windowsMapToStruct(m map[string]interface{}) (interface{}, error) {
 		return nil, err
 	}
 
-	timeDurs := []string{s.StartRecording, s.StopRecording, s.PowerOff, s.PowerOn}
+	timeDurs := []string{s.StartRecording, s.StopRecording}
 	for _, timeDur := range timeDurs {
 		if timeDur != "" && !checkIfTimeOrDuration(timeDur) {
 			return nil, fmt.Errorf("could not parse '%s' as a time or duration", timeDur)
