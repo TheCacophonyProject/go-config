@@ -219,26 +219,40 @@ func (s *SyncService) PrintConfig() {
 	content, err := os.ReadFile(filepath.Join(configDir, config.ConfigFileName))
 	if err != nil {
 		log.Errorf("Error reading config file: %v", err)
+		return
 	}
-	lines := strings.SplitSeq(string(content), "\n")
-	out := ""
-	printing := true
-	for line := range lines {
-		// Stop printing after [secrets].
-		if strings.Contains(line, "[secrets]") {
-			printing = false
+
+	inSecretsSection := false
+	var out strings.Builder
+	for line := range strings.SplitSeq(string(content), "\n") {
+		// Just some white space.
+		if strings.TrimSpace(line) == "" {
+			out.WriteString(line + "\n")
 			continue
 		}
-		// Start printing again in new section.
-		if strings.HasPrefix(line, "[") {
-			printing = true
+		// Detect when the secrets section starts [secrets].
+		if strings.HasPrefix(line, "[secrets]") {
+			inSecretsSection = true
+			out.WriteString(line + "\n")
+			continue
 		}
-		if printing {
-			out += line + "\n"
+		// Detect when secrets section ends.
+		if strings.HasPrefix(line, "[") {
+			inSecretsSection = false
+		}
+		if inSecretsSection {
+			parts := strings.Split(line, "=")
+			if len(parts) >= 2 {
+				out.WriteString(fmt.Sprintf("%s = ************\n", parts[0]))
+			} else {
+				log.Warn("Not too sure how to parse line in secrets section")
+			}
+		} else {
+			out.WriteString(line + "\n")
 		}
 	}
 
-	log.Info("Current Config:\n" + out)
+	log.Info("Current Config:\n" + out.String())
 }
 
 func (s *SyncService) syncSettings() error {
@@ -534,8 +548,28 @@ func Run(inputArgs []string, ver string) error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize sync service: %v", err)
 	}
-	for {
 
+	modemSyncInterval := time.Minute * 30
+	lastSyncTime := time.Time{}
+
+	for {
+		var syncReason string
+		select {
+		case syncReason = <-runSyncChannel:
+		case <-time.After(syncInterval):
+			syncReason = "interval sync"
+		}
+
+		if syncReason == "modem connected" && time.Since(lastSyncTime) < modemSyncInterval {
+			log.Infof("Skipping sync from modem connect as sync was ran within %s", modemSyncInterval.String())
+			continue
+		}
+
+		// TODO: If a sync occurs, and the file is changed. This will trigger another sync after the 10 second wait.
+		//       This is just a minor issue at the moment and can be fixed later.
+		//       Could compare the last config from the API and the local config, if they are the same, then don't sync again
+
+		log.Info("Running sync for reason: ", syncReason)
 		log.Println("Config before sync:")
 		syncService.PrintConfig()
 		// Perform a single sync operation
@@ -544,23 +578,16 @@ func Run(inputArgs []string, ver string) error {
 		}
 		log.Println("Config after sync:")
 		syncService.PrintConfig()
-
-		// TODO: Check that if the config changes while doing a sync that it will sync again with the new config
-		// 	     This emptyChannel might prevent this from
-		emptyChannel(runSyncChannel)
-
-		select {
-		case reason := <-runSyncChannel:
-			log.Printf("Running sync for reason: %v", reason)
-		case <-time.After(syncInterval):
-			log.Println("Running sync due to regular sync interval of ", syncInterval)
-		}
+		lastSyncTime = time.Now()
 	}
 }
 
 func makeSyncChannel() chan string {
 	// Make channel that will trigger a sync, the string is the reason for the sync.
 	c := make(chan string, 10)
+
+	// Add initial sync
+	c <- "initial sync"
 
 	// Setup modem connected signals to channel
 	go func(c chan string) {
