@@ -23,8 +23,8 @@ require (
 )
 
 require (
-	github.com/TheCacophonyProject/go-utils v0.1.1
-	github.com/TheCacophonyProject/modemd v1.10.0
+	github.com/TheCacophonyProject/go-utils v0.1.3
+	github.com/TheCacophonyProject/modemd v1.15.1
 	github.com/rjeczalik/notify v0.9.3
 	github.com/sirupsen/logrus v1.9.3
 )

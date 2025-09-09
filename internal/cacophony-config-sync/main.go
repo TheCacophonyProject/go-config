@@ -29,6 +29,7 @@ import (
 	api "github.com/TheCacophonyProject/go-api"
 	config "github.com/TheCacophonyProject/go-config"
 	"github.com/TheCacophonyProject/go-utils/logging"
+	"github.com/TheCacophonyProject/modemd/connrequester"
 	"github.com/TheCacophonyProject/modemd/modemlistener"
 	"github.com/alexflint/go-arg"
 	"github.com/rjeczalik/notify"
@@ -199,6 +200,16 @@ type SyncService struct {
 }
 
 func NewSyncService() (*SyncService, error) {
+	// Wait for an internet connection.
+	cr := connrequester.NewConnectionRequester()
+	log.Info("Requesting internet connection")
+	cr.Start()
+	err := cr.WaitUntilUpLoop(2*time.Minute, time.Hour, -1)
+	if err != nil {
+		return nil, err
+	}
+	log.Println("Internet connection made")
+	defer cr.Stop()
 	apiClient, err := api.New()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create API client: %v", err)
@@ -256,6 +267,17 @@ func (s *SyncService) PrintConfig() {
 }
 
 func (s *SyncService) syncSettings() error {
+	// Wait for an internet connection.
+	cr := connrequester.NewConnectionRequester()
+	log.Info("Requesting internet connection")
+	cr.Start()
+	err := cr.WaitUntilUpLoop(2*time.Minute, time.Minute, 0)
+	if err != nil {
+		return err
+	}
+	log.Println("Internet connection made")
+	defer cr.Stop()
+
 	deviceSettings, err := s.readCurrentSettings()
 	if err != nil {
 		return fmt.Errorf("failed to read current settings: %v", err)
