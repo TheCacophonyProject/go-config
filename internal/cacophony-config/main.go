@@ -10,11 +10,10 @@ import (
 	"github.com/TheCacophonyProject/go-utils/logging"
 	"github.com/alexflint/go-arg"
 	"github.com/pelletier/go-toml"
-	"github.com/sirupsen/logrus"
 )
 
 var version = "<not set>"
-var log *logrus.Logger
+var log *logging.Logger
 
 type Args struct {
 	ConfigDir string   `arg:"-c,--config" help:"path to configuration directory"`
