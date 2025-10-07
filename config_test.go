@@ -505,6 +505,33 @@ func TestLocation(t *testing.T) {
 
 }
 
+func TestOverwritingMaps(t *testing.T) {
+	// When writing to a map, it had been keeping the old values.
+	// This is to test that the map gets overwritten when writing a new value, not just added to.
+	defer newFs(t, "")()
+	conf, err := New(DefaultConfigDir)
+	require.NoError(t, err)
+
+	// Make multiple writes to a map
+	config1 := map[string]any{"comms": map[string]any{"trap-species": map[string]any{"dog": int64(90)}}}
+	config2 := map[string]any{"comms": map[string]any{"trap-species": map[string]any{"cat": int64(90)}}}
+	err = conf.SetMultipleSections(config1)
+	require.NoError(t, err)
+	//conf.Unset("comms.trap-species")
+	err = conf.SetMultipleSections(config2)
+	require.NoError(t, err)
+
+	// Read the config back
+	conf, err = New(DefaultConfigDir)
+	require.NoError(t, err)
+
+	configExpected := config2
+	actualConfig := conf.v.AllSettings()
+	delete(actualConfig["comms"].(map[string]any), "updated")
+
+	require.Equal(t, configExpected, actualConfig)
+}
+
 func checkWritingMap(
 	t *testing.T,
 	key string,

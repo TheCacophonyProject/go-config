@@ -106,6 +106,7 @@ func GetAllSections() map[string]interface{} {
 }
 
 func (c *Config) GetAllValues() (map[string]interface{}, error) {
+	// Get mutex lock
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -142,8 +143,11 @@ func New(dir string) (*Config, error) {
 }
 
 func (c *Config) ReadInConfig() error {
+	// Get mutex lock
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
+	// Run actual target function
 	return c.readInConfig()
 }
 
@@ -156,8 +160,11 @@ func (c *Config) readInConfig() error {
 }
 
 func (c *Config) Unmarshal(key string, raw interface{}) error {
+	// Get mutex lock
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
+	// Run actual target function
 	return c.unmarshal(key, raw)
 }
 
@@ -167,9 +174,20 @@ func (c *Config) unmarshal(key string, raw interface{}) error {
 
 // Set can only update one section at a time.
 func (c *Config) Set(key string, value interface{}) error {
+	// Get mutex lock
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return c.set(key, value)
+
+	// Run actual target function
+	if err := c.set(key, value); err != nil {
+		return err
+	}
+
+	// If should, write config
+	if c.AutoWrite {
+		return c.write()
+	}
+	return nil
 }
 
 // Set can only update one section at a time.
@@ -187,17 +205,25 @@ func (c *Config) set(key string, value interface{}) error {
 	if err := c.validateAndSet(key, value); err != nil {
 		return err
 	}
-	if c.AutoWrite {
-		return c.write()
-	}
 	return nil
 }
 
 // SetFromMap can only update one section at a time.
 func (c *Config) SetFromMap(sectionKey string, newConfig map[string]interface{}, force bool) error {
+	// Get mutex lock
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return c.setFromMap(sectionKey, newConfig, force)
+
+	// Run actual target function
+	if err := c.setFromMap(sectionKey, newConfig, force); err != nil {
+		return err
+	}
+
+	// If should, write config
+	if c.AutoWrite {
+		return c.write()
+	}
+	return nil
 }
 
 func (c *Config) setFromMap(sectionKey string, newConfig map[string]interface{}, force bool) error {
@@ -252,8 +278,11 @@ func (c *Config) SetField(sectionKey, valueKey, value string, force bool) error 
 }
 
 func (c *Config) Update() error {
+	// Get mutex lock
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
+	// Run actual target function
 	return c.update()
 }
 func (c *Config) update() error {
@@ -261,8 +290,10 @@ func (c *Config) update() error {
 }
 
 func (c *Config) Reload() error {
+	// Get mutex lock
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
 	configFile := c.v.ConfigFileUsed()
 	// Need a new viper instance to clear old settings
 	c.v = viper.New()
@@ -279,9 +310,23 @@ func (c *Config) StrictSet(key string, value interface{}, time time.Time) error 
 */
 
 func (c *Config) Unset(key string) error {
+	// Get mutex lock
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
+	// Run actual target function
+	if err := c.unset(key); err != nil {
+		return err
+	}
+
+	// If should, write config
+	if c.AutoWrite {
+		return c.write()
+	}
+	return nil
+}
+
+func (c *Config) unset(key string) error {
 	configMap := c.v.AllSettings()
 	path := strings.Split(key, ".")
 	deepestMap, err := deepSearch(configMap, path[0:len(path)-1])
@@ -307,9 +352,6 @@ func (c *Config) Unset(key string) error {
 		return err
 	}
 	c.v.Set(path[0]+".updated", now())
-	if c.AutoWrite {
-		return c.write()
-	}
 	return nil
 }
 
@@ -348,9 +390,6 @@ func (c *Config) setStruct(key string, value interface{}) error {
 	}
 	if err := c.validateAndSet(key, m); err != nil {
 		return err
-	}
-	if c.AutoWrite {
-		return c.write()
 	}
 	return nil
 }
@@ -402,7 +441,14 @@ func (c *Config) validateAndSet(key string, value interface{}) error {
 	if err := allSections[section].validate(value); err != nil {
 		return err
 	}
-	// Set the value and add the time that the section was updated at.
+
+	// if value is a map then remove all the keys in it
+	if m, ok := value.(map[string]interface{}); ok {
+		for k := range m {
+			c.unset(key + "." + k)
+		}
+	}
+
 	c.v.Set(key, value)
 	c.v.Set(section+".updated", now())
 	return nil
@@ -415,9 +461,20 @@ func (c *Config) Get(key string) interface{} {
 }
 
 func (c *Config) SetMultipleSections(newConfig map[string]interface{}) error {
+	// Get mutex lock
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return c.setMultipleSections(newConfig)
+
+	// Run actual target function
+	if err := c.setMultipleSections(newConfig); err != nil {
+		return err
+	}
+
+	// If should, write config
+	if c.AutoWrite {
+		return c.write()
+	}
+	return nil
 }
 
 func (c *Config) setMultipleSections(newConfig map[string]interface{}) error {
@@ -438,9 +495,6 @@ func (c *Config) setMultipleSections(newConfig map[string]interface{}) error {
 		}
 	}
 
-	if c.AutoWrite {
-		return c.write()
-	}
 	return nil
 }
 
