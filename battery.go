@@ -365,13 +365,13 @@ func GetAvailableChemistries() []map[string]interface{} {
 
 // AutoDetectBatteryPack detects battery chemistry and cell count based on voltage
 // It first checks against the authoritative voltage table, then falls back to range matching
-func AutoDetectBatteryPack(voltage float32) (*BatteryPack, error) {
+func AutoDetectBatteryPack(voltage float32, minVoltage float32, maxVoltage float32) (*BatteryPack, error) {
 	if voltage <= 0 {
 		return nil, fmt.Errorf("invalid voltage for detection: %.2fV", voltage)
 	}
 
 	// First priority: Check against the authoritative voltage table
-	if pack := checkVoltageTable(voltage); pack != nil {
+	if pack := checkVoltageTable(voltage, minVoltage, maxVoltage); pack != nil {
 		return pack, nil
 	}
 
@@ -380,7 +380,7 @@ func AutoDetectBatteryPack(voltage float32) (*BatteryPack, error) {
 }
 
 // checkVoltageTable checks voltage against the authoritative voltage range table
-func checkVoltageTable(voltage float32) *BatteryPack {
+func checkVoltageTable(voltage float32, observedMinVoltage float32, observedMaxVoltage float32) *BatteryPack {
 	// Voltage table ranges (authoritative source)
 	type tableEntry struct {
 		chemistry string
@@ -412,10 +412,13 @@ func checkVoltageTable(voltage float32) *BatteryPack {
 		}
 		minVoltage := chemProfile.MinVoltage * float32(entry.cells)
 		maxVoltage := chemProfile.MaxVoltage * float32(entry.cells)
+		//not sure the current voltage even matters if we have observed voltages
 		if voltage >= minVoltage && voltage <= maxVoltage {
-			return &BatteryPack{
-				Type:      &chemProfile,
-				CellCount: entry.cells,
+			if observedMinVoltage == -1 || (observedMinVoltage > minVoltage && observedMaxVoltage < maxVoltage) {
+				return &BatteryPack{
+					Type:      &chemProfile,
+					CellCount: entry.cells,
+				}
 			}
 		}
 	}

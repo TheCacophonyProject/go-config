@@ -266,6 +266,8 @@ func TestAutoDetectBatteryPack(t *testing.T) {
 	tests := []struct {
 		name              string
 		voltage           float32
+		minVoltage        float32
+		maxVoltage        float32
 		expectedChemistry string
 		expectedCells     int
 		expectError       bool
@@ -274,18 +276,24 @@ func TestAutoDetectBatteryPack(t *testing.T) {
 		{
 			name:              "3.29V should detect Li-ion 1 cell",
 			voltage:           3.29,
+			minVoltage:        -1,
+			maxVoltage:        -1,
 			expectedChemistry: ChemistryLiIon,
 			expectedCells:     1,
 		},
 		{
 			name:              "3.86V should detect Li-ion 1 cell",
 			voltage:           3.86,
+			minVoltage:        -1,
+			maxVoltage:        -1,
 			expectedChemistry: ChemistryLiIon,
 			expectedCells:     1,
 		},
 		{
 			name:              "6.6V should detect LiFePO4 2 cells",
 			voltage:           6.6,
+			minVoltage:        -1,
+			maxVoltage:        -1,
 			expectedChemistry: ChemistryLiFePO4,
 			expectedCells:     2,
 		},
@@ -293,78 +301,104 @@ func TestAutoDetectBatteryPack(t *testing.T) {
 		{
 			name:              "2.1V should detect Lead-acid 1 cell",
 			voltage:           2.1,
+			minVoltage:        -1,
+			maxVoltage:        -1,
 			expectedChemistry: ChemistryLeadAcid,
 			expectedCells:     1,
 		},
 		{
 			name:              "2.6V should detect LiFePO4 1 cell",
 			voltage:           2.6,
+			minVoltage:        -1,
+			maxVoltage:        -1,
 			expectedChemistry: ChemistryLiFePO4,
 			expectedCells:     1,
 		},
 		{
 			name:              "4.0V should detect Li-ion 1 cell",
 			voltage:           4.0,
+			minVoltage:        -1,
+			maxVoltage:        -1,
 			expectedChemistry: ChemistryLiIon,
 			expectedCells:     1,
 		},
 		{
 			name:              "6.5V should detect LiFePO4 2 cells",
 			voltage:           6.5,
+			minVoltage:        -1,
+			maxVoltage:        -1,
 			expectedChemistry: ChemistryLiFePO4,
 			expectedCells:     2,
 		},
 		{
 			name:              "7.8V should detect Li-ion 2 cells",
 			voltage:           7.8,
+			minVoltage:        -1,
+			maxVoltage:        -1,
 			expectedChemistry: ChemistryLiIon,
 			expectedCells:     2,
 		},
 		{
 			name:              "8.6V should detect LiFePO4 3 cells",
 			voltage:           8.6,
+			minVoltage:        -1,
+			maxVoltage:        -1,
 			expectedChemistry: ChemistryLiFePO4,
 			expectedCells:     3,
 		},
 		{
 			name:              "10.5V should detect Li-ion 3 cells",
 			voltage:           10.5,
+			minVoltage:        -1,
+			maxVoltage:        -1,
 			expectedChemistry: ChemistryLiIon,
 			expectedCells:     3,
 		},
 		{
 			name:              "12.0V should detect Li-ion 4 cells",
 			voltage:           12.0,
+			minVoltage:        -1,
+			maxVoltage:        -1,
 			expectedChemistry: ChemistryLiIon,
 			expectedCells:     3,
 		},
 		{
 			name:              "13.5V should detect Li-ion 4 cells",
 			voltage:           13.5,
+			minVoltage:        -1,
+			maxVoltage:        -1,
 			expectedChemistry: ChemistryLiIon,
 			expectedCells:     4,
 		},
 		{
 			name:              "17.2V should detect Li-ion 5 cells",
 			voltage:           17.2,
+			minVoltage:        -1,
+			maxVoltage:        -1,
 			expectedChemistry: ChemistryLiIon,
 			expectedCells:     5,
 		},
 		{
 			name:              "21.0V should detect Li-ion 5 cells",
 			voltage:           21.0,
+			minVoltage:        -1,
+			maxVoltage:        -1,
 			expectedChemistry: ChemistryLiIon,
 			expectedCells:     5,
 		},
 		{
 			name:              "27.0V should detect Li-ion 8 cells",
 			voltage:           27.0,
+			minVoltage:        -1,
+			maxVoltage:        -1,
 			expectedChemistry: ChemistryLiIon,
 			expectedCells:     8,
 		},
 		{
 			name:              "35.0V should detect Li-ion 10 cells",
 			voltage:           35.0,
+			minVoltage:        -1,
+			maxVoltage:        -1,
 			expectedChemistry: ChemistryLiIon,
 			expectedCells:     10,
 		},
@@ -372,23 +406,38 @@ func TestAutoDetectBatteryPack(t *testing.T) {
 		{
 			name:        "0V should return error",
 			voltage:     0,
+			minVoltage:  -1,
+			maxVoltage:  -1,
 			expectError: true,
 		},
 		{
 			name:        "negative voltage should return error",
 			voltage:     -5.0,
+			minVoltage:  -1,
+			maxVoltage:  -1,
 			expectError: true,
 		},
 		{
 			name:        "1.5V should return error (below minimum)",
 			voltage:     1.5,
+			minVoltage:  -1,
+			maxVoltage:  -1,
 			expectError: true,
+		},
+		{
+			name:              "10 cell lion should still be 10 cell if in 8 cell range",
+			voltage:           33.5,
+			minVoltage:        33.4,
+			maxVoltage:        41,
+			expectedChemistry: ChemistryLiIon,
+			expectedCells:     10,
+			expectError:       false,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			pack, err := AutoDetectBatteryPack(tc.voltage)
+			pack, err := AutoDetectBatteryPack(tc.voltage, tc.minVoltage, tc.maxVoltage)
 
 			if tc.expectError {
 				if err == nil {
@@ -459,7 +508,7 @@ func TestAutoDetectBatteryPackPreference(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.reason, func(t *testing.T) {
-			pack, err := AutoDetectBatteryPack(tc.voltage)
+			pack, err := AutoDetectBatteryPack(tc.voltage, -1, -1)
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
