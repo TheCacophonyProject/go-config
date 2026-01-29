@@ -18,6 +18,7 @@ package config
 
 import (
 	"fmt"
+	"sort"
 )
 
 // Battery configuration constants
@@ -365,13 +366,13 @@ func GetAvailableChemistries() []map[string]interface{} {
 
 // AutoDetectBatteryPack detects battery chemistry and cell count based on voltage
 // It first checks against the authoritative voltage table, then falls back to range matching
-func AutoDetectBatteryPack(voltage float32) (*BatteryPack, error) {
+func AutoDetectBatteryPack(voltage float32, minVoltage float32, maxVoltage float32) (*BatteryPack, error) {
 	if voltage <= 0 {
 		return nil, fmt.Errorf("invalid voltage for detection: %.2fV", voltage)
 	}
 
 	// First priority: Check against the authoritative voltage table
-	if pack := checkVoltageTable(voltage); pack != nil {
+	if pack := checkVoltageTable(voltage, minVoltage, maxVoltage); pack != nil {
 		return pack, nil
 	}
 
@@ -380,7 +381,7 @@ func AutoDetectBatteryPack(voltage float32) (*BatteryPack, error) {
 }
 
 // checkVoltageTable checks voltage against the authoritative voltage range table
-func checkVoltageTable(voltage float32) *BatteryPack {
+func checkVoltageTable(voltage float32, observedMinVoltage float32, observedMaxVoltage float32) *BatteryPack {
 	// Voltage table ranges (authoritative source)
 	type tableEntry struct {
 		chemistry string
@@ -412,10 +413,13 @@ func checkVoltageTable(voltage float32) *BatteryPack {
 		}
 		minVoltage := chemProfile.MinVoltage * float32(entry.cells)
 		maxVoltage := chemProfile.MaxVoltage * float32(entry.cells)
+		//not sure the current voltage even matters if we have observed voltages
 		if voltage >= minVoltage && voltage <= maxVoltage {
-			return &BatteryPack{
-				Type:      &chemProfile,
-				CellCount: entry.cells,
+			if observedMinVoltage == -1 || (observedMinVoltage > minVoltage && observedMaxVoltage < maxVoltage) {
+				return &BatteryPack{
+					Type:      &chemProfile,
+					CellCount: entry.cells,
+				}
 			}
 		}
 	}
@@ -433,43 +437,42 @@ func fallbackDetection(voltage float32) (*BatteryPack, error) {
 	}
 
 	// Build ranges from chemistry profiles, iterating from 1 to 10 cells
-	var ranges []voltageRange
 	maxCells := 10
+
+	var bestMatch *voltageRange
+
+	//makes the results consistent as the order of a map is not guaranteed in golang
+	chemistries := make([]string, 0, len(ChemistryProfiles))
+	for k := range ChemistryProfiles {
+		chemistries = append(chemistries, k)
+	}
+	sort.Strings(chemistries)
 
 	// Iterate through cell counts from 1 to maxCells
 	for cells := 1; cells <= maxCells; cells++ {
-		// Check each chemistry for this cell count
-		for chemName, chem := range ChemistryProfiles {
+		for _, chemistry := range chemistries {
+			chem := ChemistryProfiles[chemistry]
+			// Check each chemistry for this cell count
 			minV := chem.MinVoltage * float32(cells)
 			maxV := chem.MaxVoltage * float32(cells)
-
-			ranges = append(ranges, voltageRange{
+			r := voltageRange{
 				min:       minV,
 				max:       maxV,
-				chemistry: chemName,
+				chemistry: chemistry,
 				cells:     cells,
-			})
+			}
+			if voltage >= r.min && voltage <= r.max {
+				bestMatch = &r
+				break
+			}
+		}
+		if bestMatch != nil {
+			break
 		}
 	}
 
-	// Find all matching ranges for the given voltage
-	var matches []voltageRange
-	for _, r := range ranges {
-		if voltage >= r.min && voltage <= r.max {
-			matches = append(matches, r)
-		}
-	}
-
-	if len(matches) == 0 {
+	if bestMatch == nil {
 		return nil, fmt.Errorf("no battery chemistry matches voltage %.2fV", voltage)
-	}
-
-	// Prefer lower cell count as tiebreaker
-	bestMatch := matches[0]
-	for _, match := range matches {
-		if match.cells < bestMatch.cells {
-			bestMatch = match
-		}
 	}
 
 	chemProfile, exists := ChemistryProfiles[bestMatch.chemistry]
