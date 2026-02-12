@@ -292,8 +292,8 @@ func TestAutoDetectBatteryPack(t *testing.T) {
 		{
 			name:              "6.6V should detect LiFePO4 2 cells",
 			voltage:           6.6,
-			minVoltage:        -1,
-			maxVoltage:        -1,
+			minVoltage:        5,
+			maxVoltage:        6,
 			expectedChemistry: ChemistryLiFePO4,
 			expectedCells:     2,
 		},
@@ -325,8 +325,8 @@ func TestAutoDetectBatteryPack(t *testing.T) {
 		{
 			name:              "6.5V should detect LiFePO4 2 cells",
 			voltage:           6.5,
-			minVoltage:        -1,
-			maxVoltage:        -1,
+			minVoltage:        6.3,
+			maxVoltage:        6.5,
 			expectedChemistry: ChemistryLiFePO4,
 			expectedCells:     2,
 		},
@@ -485,30 +485,55 @@ func TestAutoDetectBatteryPackPreference(t *testing.T) {
 		expectedChemistry string
 		expectedCells     int
 		reason            string
+		minObserved       float32
+		maxObserved       float32
 	}{
 		{
 			voltage:           3.86,
 			expectedChemistry: ChemistryLiIon,
 			expectedCells:     1,
 			reason:            "3.86V is within Li-ion 1 cell range and Lead-acid 2 cell range, should prefer lower cell count",
+			minObserved:       -1.0,
+			maxObserved:       -1.0,
 		},
 		{
 			voltage:           6.6,
-			expectedChemistry: ChemistryLiFePO4,
+			expectedChemistry: ChemistryLiIon,
 			expectedCells:     2,
-			reason:            "6.6V is within LiFePO4 2 cell range, should detect as LiFePO4",
+			reason:            "6.6V is within Li-ion 2 and LifePo4 cell range, should prefer Li-ion",
+			minObserved:       -1.0,
+			maxObserved:       -1.0,
 		},
 		{
 			voltage:           6.7,
-			expectedChemistry: ChemistryLiFePO4,
+			expectedChemistry: ChemistryLiIon,
 			expectedCells:     2,
-			reason:            "6.7V is within LiFePO4 2 cell range, should detect as LiFePO4",
+			reason:            "6.7V is within Li-ion 2 and LifePo4 cell range, should prefer Li-ion",
+			minObserved:       -1.0,
+			maxObserved:       -1.0,
+		},
+		{
+			voltage:           9.75,
+			expectedChemistry: ChemistryLiIon,
+			expectedCells:     3,
+			reason:            "9.75 is within Li-ion and LiFePO4 3 cell range,with min oberved and max observed outside of lifepo range should detect as Li-ion",
+			minObserved:       9.6,
+			maxObserved:       10.4,
+		},
+
+		{
+			voltage:           9.75,
+			expectedChemistry: ChemistryLiFePO4,
+			expectedCells:     3,
+			reason:            "9.75 is within Li-ion and LiFePO4 3 cell range,with min oberved and max out of Li-ion range should detect as LiFePO4",
+			minObserved:       7.6,
+			maxObserved:       10.1,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.reason, func(t *testing.T) {
-			pack, err := AutoDetectBatteryPack(tc.voltage, -1, -1)
+			pack, err := AutoDetectBatteryPack(tc.voltage, tc.minObserved, tc.maxObserved)
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}

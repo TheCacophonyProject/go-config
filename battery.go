@@ -18,6 +18,7 @@ package config
 
 import (
 	"fmt"
+	"math"
 	"sort"
 )
 
@@ -392,10 +393,10 @@ func checkVoltageTable(voltage float32, observedMinVoltage float32, observedMaxV
 		{ChemistryLeadAcid, 1}, // 1. 94V - 2.15V per cell
 		{ChemistryLiIon, 1},    // 3.2V - 4.2V per cell (These are the one's we sell)
 		{ChemistryLiFePO4, 1},  // 2.5V - 3.4V per cell
-		{ChemistryLiFePO4, 2},  // 5.0V - 6.8V per pack
 		{ChemistryLiIon, 2},    // 6.4V - 8.4V per pack
-		{ChemistryLiFePO4, 3},  // 7.5V - 10.2V per pack
+		{ChemistryLiFePO4, 2},  // 5.0V - 6.8V per pack
 		{ChemistryLiIon, 3},    // 9.6V - 12.6V per pack
+		{ChemistryLiFePO4, 3},  // 7.5V - 10.2V per pack
 		{ChemistryLiIon, 4},
 		{ChemistryLiIon, 5},
 		{ChemistryLiIon, 6},
@@ -411,11 +412,11 @@ func checkVoltageTable(voltage float32, observedMinVoltage float32, observedMaxV
 		if !exists {
 			continue // Skip unknown chemistries
 		}
-		minVoltage := chemProfile.MinVoltage * float32(entry.cells)
-		maxVoltage := chemProfile.MaxVoltage * float32(entry.cells)
+		minVoltage := roundTo(chemProfile.MinVoltage*float32(entry.cells), 1)
+		maxVoltage := roundTo(chemProfile.MaxVoltage*float32(entry.cells), 1)
 		//not sure the current voltage even matters if we have observed voltages
 		if voltage >= minVoltage && voltage <= maxVoltage {
-			if observedMinVoltage == -1 || (observedMinVoltage > minVoltage && observedMaxVoltage < maxVoltage) {
+			if observedMinVoltage == -1 || (observedMinVoltage >= minVoltage && observedMaxVoltage <= maxVoltage) {
 				return &BatteryPack{
 					Type:      &chemProfile,
 					CellCount: entry.cells,
@@ -425,6 +426,11 @@ func checkVoltageTable(voltage float32, observedMinVoltage float32, observedMaxV
 	}
 
 	return nil // No table match found
+}
+
+func roundTo(n float32, decimals uint32) float32 {
+	factor := math.Pow(10, float64(decimals))
+	return (float32)(math.Round((float64)(n)*factor) / factor)
 }
 
 // fallbackDetection provides fallback detection when voltage doesn't match the table
