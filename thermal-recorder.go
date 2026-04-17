@@ -42,6 +42,7 @@ type ThermalRecorder struct {
 	PreviewSecs      int       `mapstructure:"preview-secs"`
 	ConstantRecorder bool      `mapstructure:"constant-recorder"`
 	UseLowPowerMode  bool      `mapstructure:"use-low-power-mode"`
+	InstantClassify  bool      `mapstructure:"instant-classify"`
 	Updated          time.Time `mapstructure:"updated"`
 }
 
@@ -54,6 +55,7 @@ func DefaultThermalRecorder() ThermalRecorder {
 		OutputDir:        "/var/spool/cptv",
 		ConstantRecorder: false,
 		UseLowPowerMode:  false,
+		InstantClassify:  false,
 		Updated:          time.Now(),
 	}
 }
