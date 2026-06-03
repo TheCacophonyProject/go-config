@@ -323,9 +323,9 @@ func TestAutoDetectBatteryPack(t *testing.T) {
 			expectedCells:     1,
 		},
 		{
-			name:              "6.5V should detect LiFePO4 2 cells",
-			voltage:           6.5,
-			minVoltage:        6.3,
+			name:              "5V should detect LiFePO4 2 cells",
+			voltage:           5,
+			minVoltage:        5,
 			maxVoltage:        6.5,
 			expectedChemistry: ChemistryLiFePO4,
 			expectedCells:     2,
@@ -339,11 +339,11 @@ func TestAutoDetectBatteryPack(t *testing.T) {
 			expectedCells:     2,
 		},
 		{
-			name:              "8.6V should detect LiFePO4 3 cells",
+			name:              "8.6V should detect Li-ion 3 cells",
 			voltage:           8.6,
 			minVoltage:        -1,
 			maxVoltage:        -1,
-			expectedChemistry: ChemistryLiFePO4,
+			expectedChemistry: ChemistryLiIon,
 			expectedCells:     3,
 		},
 		{
@@ -395,6 +395,14 @@ func TestAutoDetectBatteryPack(t *testing.T) {
 			expectedCells:     8,
 		},
 		{
+			name:              "28.8V should detect Li-ion 10 cells",
+			voltage:           28.8,
+			minVoltage:        28,
+			maxVoltage:        40,
+			expectedChemistry: ChemistryLiIon,
+			expectedCells:     10,
+		},
+		{
 			name:              "35.0V should detect Li-ion 10 cells",
 			voltage:           35.0,
 			minVoltage:        -1,
@@ -402,6 +410,7 @@ func TestAutoDetectBatteryPack(t *testing.T) {
 			expectedChemistry: ChemistryLiIon,
 			expectedCells:     10,
 		},
+
 		// Error cases
 		{
 			name:        "0V should return error",
@@ -498,19 +507,19 @@ func TestAutoDetectBatteryPackPreference(t *testing.T) {
 		},
 		{
 			voltage:           6.6,
-			expectedChemistry: ChemistryLiIon,
+			expectedChemistry: ChemistryLiFePO4,
 			expectedCells:     2,
-			reason:            "6.6V is within Li-ion 2 and LifePo4 cell range, should prefer Li-ion",
-			minObserved:       -1.0,
-			maxObserved:       -1.0,
+			reason:            "6.6V is within Li-ion 2 and LifePo4 cell range, should prefer LifePo4",
+			minObserved:       5.6,
+			maxObserved:       6,
 		},
 		{
 			voltage:           6.7,
 			expectedChemistry: ChemistryLiIon,
 			expectedCells:     2,
-			reason:            "6.7V is within Li-ion 2 and LifePo4 cell range, should prefer Li-ion",
-			minObserved:       -1.0,
-			maxObserved:       -1.0,
+			reason:            "6.7V is within Li-ion 2 and LifePo4 cell range but has a max observed of 7v, should prefer Li-Ion",
+			minObserved:       5.6,
+			maxObserved:       7,
 		},
 		{
 			voltage:           9.75,

@@ -231,7 +231,7 @@ var LiFePO4Chemistry = BatteryType{
 // Based on NMC cells
 var LiIonChemistry = BatteryType{
 	Chemistry:  ChemistryLiIon,
-	MinVoltage: 3.2,
+	MinVoltage: 2.8,
 	MaxVoltage: 4.2,
 	Voltages:   []float32{2.5, 3.0, 3.2, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0, 4.2},
 	Percent:    []float32{0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100},
@@ -391,11 +391,11 @@ func checkVoltageTable(voltage float32, observedMinVoltage float32, observedMaxV
 
 	voltageTable := []tableEntry{
 		{ChemistryLeadAcid, 1}, // 1. 94V - 2.15V per cell
-		{ChemistryLiIon, 1},    // 3.2V - 4.2V per cell (These are the one's we sell)
+		{ChemistryLiIon, 1},    // 2.8V - 4.2V per cell (These are the one's we sell)
 		{ChemistryLiFePO4, 1},  // 2.5V - 3.4V per cell
-		{ChemistryLiIon, 2},    // 6.4V - 8.4V per pack
 		{ChemistryLiFePO4, 2},  // 5.0V - 6.8V per pack
-		{ChemistryLiIon, 3},    // 9.6V - 12.6V per pack
+		{ChemistryLiIon, 2},    // 5.6V - 8.4V per pack
+		{ChemistryLiIon, 3},    // 8.3V - 12.6V per pack
 		{ChemistryLiFePO4, 3},  // 7.5V - 10.2V per pack
 		{ChemistryLiIon, 4},
 		{ChemistryLiIon, 5},
