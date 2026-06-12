@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 )
 
 const TrapKey = "trap"
@@ -11,7 +12,7 @@ func init() {
 	allSections[TrapKey] = section{
 		key:         TrapKey,
 		mapToStruct: trapMapToStruct,
-		validate:    validateTrap,
+		validate:    noValidateFunc,
 		defaultValue: func() any {
 			return DefaultTrap()
 		},
@@ -22,32 +23,30 @@ func init() {
 }
 
 type Trap struct {
-	Config string `mapstructure:"config"`
+	Config map[string]any `mapstructure:"config"`
 }
 
 func DefaultTrap() Trap {
 	return Trap{
-		Config: "{}",
+		Config: map[string]any{},
 	}
 }
 
-func trapMapToStruct(m map[string]interface{}) (interface{}, error) {
+func trapMapToStruct(m map[string]any) (any, error) {
 	var s Trap
-	if err := decodeStructFromMap(&s, m, nil); err != nil {
+	if err := decodeStructFromMap(&s, m, jsonStringToMap); err != nil {
 		return nil, err
 	}
 	return s, nil
 }
 
-func validateTrap(t any) error {
-	trap, err := ConvertToStruct[Trap](t)
-	if err != nil {
-		return err
+func jsonStringToMap(f reflect.Type, t reflect.Type, data any) (any, error) {
+	if f.Kind() != reflect.String || t != reflect.TypeFor[map[string]any]() {
+		return data, nil
 	}
-
-	if trap.Config != "" && !json.Valid([]byte(trap.Config)) {
-		return fmt.Errorf("trap config is not valid JSON")
+	var m map[string]any
+	if err := json.Unmarshal([]byte(data.(string)), &m); err != nil {
+		return nil, fmt.Errorf("failed to parse JSON string as map: %v", err)
 	}
-
-	return nil
+	return m, nil
 }
