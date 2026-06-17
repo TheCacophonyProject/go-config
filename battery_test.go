@@ -409,6 +409,13 @@ func TestAutoDetectBatteryPack(t *testing.T) {
 			maxVoltage:        -1,
 			expectedChemistry: ChemistryLiIon,
 			expectedCells:     10,
+		}, {
+			name:              "31.0V should detect Li-ion 10 cells instead of 8 cell even if observed min is out of range",
+			voltage:           31.0,
+			minVoltage:        10,
+			maxVoltage:        27,
+			expectedChemistry: ChemistryLiIon,
+			expectedCells:     10,
 		},
 
 		// Error cases
@@ -539,7 +546,7 @@ func TestAutoDetectBatteryPackPreference(t *testing.T) {
 			maxObserved:       10.1,
 		},
 		{
-			voltage:           32,
+			voltage:           31.6,
 			expectedChemistry: ChemistryLiIon,
 			expectedCells:     10,
 			reason:            "32 is is within 8 cell and 10 cell LiIon but we should prefer 10 cell",
