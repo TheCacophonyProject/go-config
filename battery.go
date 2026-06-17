@@ -400,8 +400,8 @@ func checkVoltageTable(voltage float32, observedMinVoltage float32, observedMaxV
 		{ChemistryLiIon, 4},
 		{ChemistryLiIon, 5},
 		{ChemistryLiIon, 6},
-		{ChemistryLiIon, 8},
 		{ChemistryLiIon, 10},
+		{ChemistryLiIon, 8},
 		{ChemistryLiIon, 12},
 	}
 

@@ -538,6 +538,14 @@ func TestAutoDetectBatteryPackPreference(t *testing.T) {
 			minObserved:       7.6,
 			maxObserved:       10.1,
 		},
+		{
+			voltage:           32,
+			expectedChemistry: ChemistryLiIon,
+			expectedCells:     10,
+			reason:            "32 is is within 8 cell and 10 cell LiIon but we should prefer 10 cell",
+			minObserved:       28,
+			maxObserved:       32,
+		},
 	}
 
 	for _, tc := range tests {
