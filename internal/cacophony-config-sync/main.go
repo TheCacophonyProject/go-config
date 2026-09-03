@@ -20,6 +20,7 @@ package cacophonyconfigsync
 import (
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -36,8 +37,10 @@ import (
 )
 
 const (
-	configDir    = config.DefaultConfigDir
-	syncInterval = time.Hour * 24
+	configDir              = config.DefaultConfigDir
+	syncInterval           = time.Hour * 24
+	apiErrorRetryInterval  = time.Minute      // How often to retry to connect to the API when it fails
+	syncErrorRetryInterval = time.Minute * 10 // How often to retry when the config sync fails
 )
 
 func stringToTimeConverter(value any) (any, error) {
@@ -199,6 +202,39 @@ type SyncService struct {
 	config    *config.Config
 }
 
+// errNoConnection is used to report that an internet connection could not be
+// made, so that it can be told apart from other errors.
+var errNoConnection = errors.New("no internet connection")
+
+// isNetworkError returns true if the error was caused by the internet
+// connection, such as there being no connection, a DNS failure, or a timeout.
+// These are expected to happen from time to time so they are retried, other
+// errors are returned so that they are not hidden.
+func isNetworkError(err error) bool {
+	if errors.Is(err, errNoConnection) {
+		return true
+	}
+	var netErr net.Error
+	return errors.As(err, &netErr)
+}
+
+// connectToAPI will keep trying to make an API client while it is failing
+// because of the internet connection, so that a temporary internet issue
+// doesn't stop the service from starting.
+func connectToAPI() (*api.CacophonyAPI, error) {
+	for {
+		apiClient, err := api.New()
+		if err == nil {
+			return apiClient, nil
+		}
+		if !isNetworkError(err) {
+			return nil, err
+		}
+		log.Warnf("Failed to create API client because of a network issue, trying again in %v: %v", apiErrorRetryInterval, err)
+		time.Sleep(apiErrorRetryInterval)
+	}
+}
+
 func NewSyncService() (*SyncService, error) {
 	// Wait for an internet connection.
 	cr := connrequester.NewConnectionRequester()
@@ -210,7 +246,7 @@ func NewSyncService() (*SyncService, error) {
 	}
 	log.Println("Internet connection made")
 	defer cr.Stop()
-	apiClient, err := api.New()
+	apiClient, err := connectToAPI()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create API client: %v", err)
 	}
@@ -238,13 +274,15 @@ func (s *SyncService) PrintConfig() {
 	for line := range strings.SplitSeq(string(content), "\n") {
 		// Just some white space.
 		if strings.TrimSpace(line) == "" {
-			out.WriteString(line + "\n")
+			out.WriteString(line)
+			out.WriteString("\n")
 			continue
 		}
 		// Detect when the secrets section starts [secrets].
 		if strings.HasPrefix(line, "[secrets]") {
 			inSecretsSection = true
-			out.WriteString(line + "\n")
+			out.WriteString(line)
+			out.WriteString("\n")
 			continue
 		}
 		// Detect when secrets section ends.
@@ -259,7 +297,8 @@ func (s *SyncService) PrintConfig() {
 				log.Warn("Not too sure how to parse line in secrets section")
 			}
 		} else {
-			out.WriteString(line + "\n")
+			out.WriteString(line)
+			out.WriteString("\n")
 		}
 	}
 
@@ -271,9 +310,8 @@ func (s *SyncService) syncSettings() error {
 	cr := connrequester.NewConnectionRequester()
 	log.Info("Requesting internet connection")
 	cr.Start()
-	err := cr.WaitUntilUpLoop(2*time.Minute, time.Minute, 0)
-	if err != nil {
-		return err
+	if err := cr.WaitUntilUpLoop(2*time.Minute, time.Minute, 0); err != nil {
+		return errNoConnection
 	}
 	log.Println("Internet connection made")
 	defer cr.Stop()
@@ -287,7 +325,7 @@ func (s *SyncService) syncSettings() error {
 	// Send config to server and get the updated settings
 	serverSettings, err := s.uploadSettingsToAPI(deviceSettings)
 	if err != nil {
-		return fmt.Errorf("failed to synchronize settings with API: %v", err)
+		return fmt.Errorf("failed to upload settings to API: %w", err)
 	}
 
 	// Map server settings to expected config structure
@@ -489,7 +527,7 @@ func (s *SyncService) uploadSettingsToAPI(settings map[string]any) (map[string]a
 
 	updatedSettings, err := s.apiClient.UpdateDeviceSettings(settingsMap)
 	if err != nil {
-		return nil, fmt.Errorf("failed to update settings on API: %v", err)
+		return nil, fmt.Errorf("failed to update settings on API: %w", err)
 	}
 	log.Printf("Update Settings: %+v", updatedSettings)
 	return updatedSettings, nil
@@ -574,13 +612,18 @@ func Run(inputArgs []string, ver string) error {
 	modemSyncInterval := time.Minute * 30
 	lastSyncTime := time.Time{}
 
+	// How long to wait for the next interval sync. This is shortened when a
+	// sync fails so that it is retried sooner.
+	syncWait := syncInterval
+
 	for {
 		var syncReason string
 		select {
 		case syncReason = <-runSyncChannel:
-		case <-time.After(syncInterval):
+		case <-time.After(syncWait):
 			syncReason = "interval sync"
 		}
+		syncWait = syncInterval
 
 		if syncReason == "modem connected" && time.Since(lastSyncTime) < modemSyncInterval {
 			log.Infof("Skipping sync from modem connect as sync was ran within %s", modemSyncInterval.String())
@@ -596,7 +639,14 @@ func Run(inputArgs []string, ver string) error {
 		syncService.PrintConfig()
 		// Perform a single sync operation
 		if err := syncService.syncSettings(); err != nil {
-			return fmt.Errorf("sync operation failed: %v", err)
+			if !isNetworkError(err) {
+				return fmt.Errorf("sync operation failed: %v", err)
+			}
+			// A sync can fail because of the internet connection, so
+			// just log it and try again sooner instead of exiting.
+			log.Warnf("Sync failed because of a network issue, trying again in %v: %v", syncErrorRetryInterval, err)
+			syncWait = syncErrorRetryInterval
+			continue
 		}
 		log.Println("Config after sync:")
 		syncService.PrintConfig()
