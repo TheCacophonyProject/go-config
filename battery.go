@@ -213,8 +213,8 @@ func (bt *BatteryType) NormalizeCurves() {
 
 // ChemistryProfiles defines single-cell characteristics for each chemistry type
 var ChemistryProfiles = map[string]BatteryType{
-	ChemistryLiFePO4:  LiFePO4Chemistry,
 	ChemistryLiIon:    LiIonChemistry,
+	ChemistryLiFePO4:  LiFePO4Chemistry,
 	ChemistryLeadAcid: LeadAcidChemistry,
 	ChemistryLiPo:     LiPoChemistry,
 }
@@ -405,21 +405,32 @@ func checkVoltageTable(voltage float32, observedMinVoltage float32, observedMaxV
 		{ChemistryLiIon, 12},
 	}
 
+	type observedBounds struct {
+		min float32
+		max float32
+	}
+
+	observedRanges := []observedBounds{{observedMinVoltage, observedMaxVoltage}}
+	if observedMinVoltage != -1 {
+		observedRanges = append(observedRanges, observedBounds{-1, -1})
+	}
 	// Check if voltage falls into any table range
 	// For overlapping ranges, the first match in the table wins (table is ordered by preference)
-	for _, entry := range voltageTable {
-		chemProfile, exists := ChemistryProfiles[entry.chemistry]
-		if !exists {
-			continue // Skip unknown chemistries
-		}
-		minVoltage := roundTo(chemProfile.MinVoltage*float32(entry.cells), 1)
-		maxVoltage := roundTo(chemProfile.MaxVoltage*float32(entry.cells), 1)
-		//not sure the current voltage even matters if we have observed voltages
-		if voltage >= minVoltage && voltage <= maxVoltage {
-			if observedMinVoltage == -1 || (observedMinVoltage >= minVoltage && observedMaxVoltage <= maxVoltage) {
-				return &BatteryPack{
-					Type:      &chemProfile,
-					CellCount: entry.cells,
+	for _, observed := range observedRanges {
+		for _, entry := range voltageTable {
+			chemProfile, exists := ChemistryProfiles[entry.chemistry]
+			if !exists {
+				continue // Skip unknown chemistries
+			}
+			minVoltage := roundTo(chemProfile.MinVoltage*float32(entry.cells), 1)
+			maxVoltage := roundTo(chemProfile.MaxVoltage*float32(entry.cells), 1)
+			//not sure the current voltage even matters if we have observed voltages
+			if voltage >= minVoltage && voltage <= maxVoltage {
+				if observed.min == -1 || (observed.min >= minVoltage && (observed.max == -1 || observed.max <= maxVoltage)) {
+					return &BatteryPack{
+						Type:      &chemProfile,
+						CellCount: entry.cells,
+					}
 				}
 			}
 		}
