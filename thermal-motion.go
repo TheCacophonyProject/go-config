@@ -46,7 +46,6 @@ type ThermalMotion struct {
 	EdgePixels       int    `mapstructure:"edge-pixels"`
 	Verbose          bool   `mapstructure:"verbose"`
 	RunClassifier    bool   `mapstructure:"run-classifier"`
-	DoTracking       bool   `mapstructure:"do-tracking"`
 	BluetoothBeacons bool   `mapstructure:"bluetooth-beacons"`
 	PostProcess      bool   `mapstructure:"postprocess"`
 }
