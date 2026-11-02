@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/TheCacophonyProject/go-config/configtest"
+	toml "github.com/pelletier/go-toml"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -314,7 +315,6 @@ func TestValidationFailOnSettingMultipleSections(t *testing.T) {
 	defer newFs(t, "")()
 	conf, err := New(DefaultConfigDir)
 	require.NoError(t, err)
-
 	d := randomDevice()
 	w := randomWindows()
 	l := randomLocation()
@@ -349,6 +349,9 @@ func TestValidationFailOnSettingMultipleSections(t *testing.T) {
 
 func TestSettingMultipleSections(t *testing.T) {
 	defer newFs(t, "")()
+	// Start with the sections already in the config file, as setting existing
+	// sections used to lose all but the last two set.
+	writeConfigFile(t)
 	conf, err := New(DefaultConfigDir)
 	require.NoError(t, err)
 	newNow()
@@ -567,6 +570,28 @@ func newFs(t *testing.T, configFile string) func() {
 	lockFileFunc, cleanupFunc := configtest.WriteConfigFromFile(t, configFile, fsConfigFile, fs)
 	SetLockFilePath(lockFileFunc)
 	return cleanupFunc
+}
+
+// writeConfigFile writes random device, windows, location and test-hosts
+// sections straight to the test config file.
+func writeConfigFile(t *testing.T) {
+	sections := map[string]interface{}{
+		DeviceKey:    randomDevice(),
+		WindowsKey:   randomWindows(),
+		LocationKey:  randomLocation(),
+		TestHostsKey: randomTestHosts(),
+	}
+	configMap := map[string]interface{}{}
+	for key, value := range sections {
+		m, err := interfaceToMap(value)
+		require.NoError(t, err)
+		configMap[key] = m
+	}
+	tree, err := toml.TreeFromMap(configMap)
+	require.NoError(t, err)
+	b, err := tree.Marshal()
+	require.NoError(t, err)
+	require.NoError(t, afero.WriteFile(fs, path.Join(DefaultConfigDir, ConfigFileName), b, 0644))
 }
 
 func newNow() {

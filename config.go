@@ -198,6 +198,11 @@ func (c *Config) set(key string, value interface{}) error {
 	if err := c.update(); err != nil {
 		return err
 	}
+	return c.setSection(key, value)
+}
+
+// setSection sets a section without re-reading the config file first.
+func (c *Config) setSection(key string, value interface{}) error {
 	kind := reflect.ValueOf(value).Kind()
 	if kind == reflect.Struct || kind == reflect.Ptr {
 		return c.setStruct(key, value)
@@ -489,8 +494,14 @@ func (c *Config) setMultipleSections(newConfig map[string]interface{}) error {
 		}
 	}
 
+	// Read the config once before setting the sections. Calling set for each
+	// section would re-read the config file every time, losing sections set
+	// before it that haven't been written yet.
+	if err := c.update(); err != nil {
+		return err
+	}
 	for key, value := range newConfig {
-		if err := c.set(key, value); err != nil {
+		if err := c.setSection(key, value); err != nil {
 			return fmt.Errorf("only partial config set, failed to set %s: %v", key, err)
 		}
 	}
