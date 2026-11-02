@@ -383,6 +383,45 @@ func TestSettingMultipleSections(t *testing.T) {
 	require.Equal(t, h, h2)
 }
 
+// Setting three or more sections from maps on top of an existing config file
+// used to lose all but the last two sections set.
+func TestSettingMultipleSectionsFromMaps(t *testing.T) {
+	defer newFs(t, "")()
+	fsConfigFile := path.Join(DefaultConfigDir, ConfigFileName)
+	// Map iteration order is random, so repeat to cover different set orders.
+	for i := 0; i < 20; i++ {
+		require.NoError(t, afero.WriteFile(fs, fsConfigFile, []byte(`
+[comms]
+enable = false
+[thermal-motion]
+run-classifier = false
+[thermal-recorder]
+use-low-power-mode = true
+`), 0644))
+		conf, err := New(DefaultConfigDir)
+		require.NoError(t, err)
+
+		require.NoError(t, conf.SetMultipleSections(map[string]interface{}{
+			CommsKey:           map[string]interface{}{"enable": true},
+			ThermalMotionKey:   map[string]interface{}{"run-classifier": true},
+			ThermalRecorderKey: map[string]interface{}{"use-low-power-mode": false},
+		}))
+
+		conf, err = New(DefaultConfigDir)
+		require.NoError(t, err)
+		comms := Comms{}
+		require.NoError(t, conf.Unmarshal(CommsKey, &comms))
+		thermalMotion := ThermalMotion{}
+		require.NoError(t, conf.Unmarshal(ThermalMotionKey, &thermalMotion))
+		thermalRecorder := ThermalRecorder{}
+		require.NoError(t, conf.Unmarshal(ThermalRecorderKey, &thermalRecorder))
+
+		require.True(t, comms.Enable)
+		require.True(t, thermalMotion.RunClassifier)
+		require.False(t, thermalRecorder.UseLowPowerMode)
+	}
+}
+
 func TestNotWritingZeroValues(t *testing.T) {
 	defer newFs(t, "")()
 	conf, err := New(DefaultConfigDir)
